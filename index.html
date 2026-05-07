@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Crédito Rural · MDCR · BCB</title>
+<title>Observatório do Crédito Rural · BCB/SICOR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -180,6 +180,48 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:10
   display:none;line-height:1.6;
 }
 
+
+/* ── OBSERVATÓRIO MAP ── */
+.obs-wrap{display:flex;flex:1;overflow:hidden;min-height:0}
+.obs-map-col{flex:1.6;position:relative;border-right:1px solid var(--bor);display:flex;flex-direction:column}
+.obs-side-col{width:320px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden}
+.obs-ctrl{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--bor);flex-shrink:0;flex-wrap:wrap}
+.obs-btn{font-family:var(--mono);font-size:8px;padding:4px 10px;border-radius:2px;border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;transition:all .1s;white-space:nowrap}
+.obs-btn:hover{border-color:var(--acc);color:var(--acc)}
+.obs-btn.active{background:var(--acc);color:#000;border-color:var(--acc);font-weight:600}
+.obs-select{font-family:var(--mono);font-size:8px;padding:4px 8px;border-radius:2px;border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;outline:none}
+.obs-select:focus{border-color:var(--acc)}
+.obs-breadcrumb{font-family:var(--mono);font-size:9px;color:var(--mut);display:flex;align-items:center;gap:4px;padding:0 12px;height:28px;border-bottom:1px solid var(--bor);flex-shrink:0;flex-wrap:wrap}
+.obs-breadcrumb span{cursor:pointer;transition:color .1s}
+.obs-breadcrumb span:hover{color:var(--acc)}
+.obs-breadcrumb span.active{color:var(--txt)}
+.obs-breadcrumb .sep{color:var(--mut);cursor:default}
+#obsMapSvg{flex:1;width:100%;height:100%;display:block}
+.obs-feature{cursor:pointer;transition:opacity .12s,stroke-width .12s;stroke:#0f0f0f;stroke-width:.5}
+.obs-feature:hover{opacity:.75;stroke-width:2;stroke:var(--acc)}
+.obs-feature.selected{stroke:var(--acc);stroke-width:2.5;opacity:1}
+.obs-tip{position:fixed;background:var(--s3);border:1px solid var(--bor2);color:var(--txt);padding:8px 12px;border-radius:3px;font-family:var(--mono);font-size:9px;pointer-events:none;z-index:500;display:none;line-height:1.7;max-width:220px}
+.obs-legend{display:flex;align-items:center;gap:6px;padding:6px 12px;border-top:1px solid var(--bor);flex-shrink:0;flex-wrap:wrap}
+.obs-leg-item{display:flex;align-items:center;gap:3px;font-family:var(--mono);font-size:7.5px;color:var(--mut)}
+.obs-leg-box{width:10px;height:10px;border-radius:1px}
+.obs-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:1px;background:var(--bor);flex-shrink:0}
+.obs-kpi{background:var(--s2);padding:8px 10px}
+.obs-kpi-l{font-family:var(--mono);font-size:7px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.obs-kpi-v{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--txt);line-height:1}
+.obs-kpi-u{font-family:var(--mono);font-size:8px;color:var(--mut)}
+.obs-kpi.acc{border-left:2px solid var(--acc)}
+.obs-kpi.acc2{border-left:2px solid var(--acc2)}
+.obs-kpi.acc3{border-left:2px solid var(--acc3)}
+.obs-kpi.acc5{border-left:2px solid var(--acc5)}
+.obs-chart-wrap{flex:1;min-height:0;padding:10px;position:relative}
+.obs-chart-wrap canvas{position:absolute;inset:10px}
+.obs-tbl-wrap{flex:1;overflow:auto;font-size:10px}
+.obs-loading{display:flex;align-items:center;justify-content:center;height:100%;gap:8px;font-family:var(--mono);font-size:9px;color:var(--mut)}
+.obs-tabs{display:flex;border-bottom:1px solid var(--bor);flex-shrink:0}
+.obs-tab{padding:6px 12px;font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s}
+.obs-tab:hover{color:var(--mid)}
+.obs-tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+
 /* Spinner */
 .spinner{display:flex;align-items:center;justify-content:center;height:100%;gap:8px;font-family:var(--mono);font-size:9px;color:var(--mut)}
 .spin{width:14px;height:14px;border:2px solid var(--bor);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
@@ -211,7 +253,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:10
   <div class="brand">
     <div class="brand-dot"></div>
     <div>
-      <div class="brand-text">Crédito Rural</div>
+      <div class="brand-text">Observatório do Crédito Rural</div>
       <div class="brand-sub">BCB · SICOR · MDCR v2</div>
     </div>
   </div>
@@ -299,6 +341,7 @@ const ABAS = [
   {id:'modalidade',label:'Modalidade'},
   {id:'produtos', label:'Produtos'},
   {id:'abc',      label:'ABC+'},
+  {id:'observatorio', label:'Observatório'},
   {id:'mapa',     label:'Mapa'},
   {id:'porte',    label:'Porte'},
   {id:'genero',   label:'Gênero'},
@@ -334,7 +377,8 @@ async function loadAll() {
   const nomes = ['fonte_recursos','fonte_if','invest_regiao','custeio_regiao',
                  'comercializacao','prog_subprograma','prog_sub_uf','genero',
                  'segmento_if','tipo_pessoa','seg_if_uf','faixa_valores',
-                 'faixa_uf','regiao_uf','municipios','invest_municipio','custeio_municipio'];
+                 'faixa_uf','regiao_uf','municipios','invest_municipio','custeio_municipio',
+                 'mapa_estados','mapa_regioes','mapa_brasil','mapa_municipios','mapa_meta'];
   let ok = 0;
   for (const n of nomes) {
     await loadJSON(n);
@@ -598,6 +642,16 @@ function setAba(id) {
   render();
 }
 
+
+// ── UTILITÁRIO GÊNERO ──
+function normGenero(r) {
+  if (r.nomeGenero) return r.nomeGenero;
+  const cd = String(r.cdSexo || r.Genero || '');
+  if (cd === 'F' || cd === '2') return 'Feminino';
+  if (cd === 'M' || cd === '1') return 'Masculino';
+  return 'Não informado';
+}
+
 // ═══════════════════════════════════════════════
 // BRAZIL MAP
 // ═══════════════════════════════════════════════
@@ -703,6 +757,7 @@ async function render() {
   else if (abaAtual === 'modalidade') await renderModalidade(panels);
   else if (abaAtual === 'produtos')   await renderProdutos(panels);
   else if (abaAtual === 'abc')        await renderABC(panels);
+  else if (abaAtual === 'observatorio') await renderObservatorio(panels);
   else if (abaAtual === 'mapa')       await renderMapa(panels);
   else if (abaAtual === 'porte')      await renderPorte(panels);
   else if (abaAtual === 'genero')     await renderGenero(panels);
@@ -996,7 +1051,7 @@ async function renderABC(panels) {
   }
 }
 
-// ── MAPA ──
+// ── MAPA (simples, mantido) ──
 async function renderMapa(panels) {
   panels.style.cssText = 'grid-template-columns:1.3fr 1fr;grid-template-rows:1fr';
   panels.innerHTML = `
@@ -1008,26 +1063,527 @@ async function renderMapa(panels) {
       <div class="ph"><span class="ph-title">Ranking UFs · período</span><span class="ph-tag">R$ bi</span></div>
       <div class="tbl-wrap" id="tUF"></div>
     </div>`;
-
   const ru = DB.regiao_uf; if (!ru) return;
   const anos = anosAtivos();
   const rows = (ru.serie_uf_ano||[]).filter(r=>anos.includes(String(r.AnoEmissao)));
-
   const ufTot = {};
   for (const r of rows) {
     const uf = r.nomeUF||r.cdEstado||'';
     if (!uf) continue;
     ufTot[uf] = (ufTot[uf]||0) + (r.VlCusteio||0) + (r.VlInvestimento||0) + (r.VlComercializacao||0);
   }
-
   renderMap('mapContainer', ufTot);
-
   const sorted = Object.entries(ufTot).sort((a,b)=>b[1]-a[1]);
   const mx = sorted[0]?.[1]||1;
   tabelaRanking('tUF', sorted.map(([uf,v])=>({uf,val:v,_val:v})), [
-    {label:'UF', key:'uf'},
-    {label:'R$ bi', key:'val', num:true, bar:true, dec:1, color:'#c8e63c'},
+    {label:'UF', key:'uf'},{label:'R$ bi', key:'val', num:true, bar:true, dec:1, color:'#c8e63c'},
   ], mx);
+}
+
+// ════════════════════════════════════════════════════════
+// OBSERVATÓRIO — MAPA DRILL-DOWN
+// ════════════════════════════════════════════════════════
+const OBS = {
+  nivel: 'brasil',   // brasil | regiao | estado | municipios
+  regiaoSel: null,
+  estadoSel: null,
+  dimensao: 'total', // total | lca | shareLCA | custeio | invest
+  anoSel: '2023',
+  geoEstados: null,
+  geoMunicipios: null,
+  chartObs: null,
+};
+
+const OBS_DIM = {
+  total:    {label:'Volume Total',      unit:'R$ bi', fmt:v=>v.toFixed(2)+'bi'},
+  lca:      {label:'LCA',               unit:'R$ bi', fmt:v=>v.toFixed(2)+'bi'},
+  shareLCA: {label:'LCA Share',         unit:'%',     fmt:v=>v.toFixed(1)+'%'},
+  custeio:  {label:'Custeio',           unit:'R$ bi', fmt:v=>v.toFixed(2)+'bi'},
+  invest:   {label:'Investimento',      unit:'R$ bi', fmt:v=>v.toFixed(2)+'bi'},
+};
+
+const IBGE_ESTADOS_URL = 'https://servicodados.ibge.gov.br/api/v2/malhas/BR?resolucao=2&formato=application/vnd.geo+json';
+const IBGE_MUN_URL     = cod => `https://servicodados.ibge.gov.br/api/v2/malhas/${cod}?resolucao=5&formato=application/vnd.geo+json`;
+
+function obsColor(t, mn, mx) {
+  if (mn === mx) return '#2a4a30';
+  const r = Math.pow((t-mn)/(mx-mn), 0.55);
+  const from=[20,35,22], to=[180,230,60];
+  const lerp=(a,b,t)=>Math.round(a+(b-a)*t);
+  return `rgb(${lerp(from[0],to[0],r)},${lerp(from[1],to[1],r)},${lerp(from[2],to[2],r)})`;
+}
+
+async function renderObservatorio(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr;grid-template-rows:1fr';
+  panels.innerHTML = `
+    <div class="panel" style="display:flex;flex-direction:column;overflow:hidden">
+      <div class="ph" style="gap:8px">
+        <span class="ph-title">Observatório do Crédito Rural</span>
+        <span class="ph-tag">BCB · SICOR · MDCR v2</span>
+      </div>
+      <!-- controles -->
+      <div class="obs-ctrl">
+        <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">NÍVEL:</span>
+        <button class="obs-btn active" onclick="obsSetNivel('brasil')">🇧🇷 Brasil</button>
+        <button class="obs-btn" onclick="obsSetNivel('regiao')" id="obsBtnReg">Regiões</button>
+        <button class="obs-btn" onclick="obsSetNivel('estado')" id="obsBtnEst">Estados</button>
+        <button class="obs-btn" onclick="obsSetNivel('municipios')" id="obsBtnMun">Municípios</button>
+        <span style="flex:1"></span>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">DIMENSÃO:</span>
+        <select class="obs-select" id="obsDim" onchange="obsSetDim(this.value)">
+          <option value="total">Volume Total</option>
+          <option value="lca">LCA (R$ bi)</option>
+          <option value="shareLCA">LCA Share (%)</option>
+          <option value="custeio">Custeio</option>
+          <option value="invest">Investimento</option>
+        </select>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">ANO:</span>
+        <select class="obs-select" id="obsAno" onchange="obsSetAno(this.value)">
+          ${['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'].map(a=>
+            `<option value="${a}"${a==='2023'?' selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+      <!-- breadcrumb -->
+      <div class="obs-breadcrumb" id="obsBreadcrumb">
+        <span class="active">🇧🇷 Brasil</span>
+      </div>
+      <!-- corpo principal -->
+      <div class="obs-wrap" id="obsWrap">
+        <div class="obs-map-col" id="obsMapCol">
+          <div class="obs-loading" id="obsLoading"><div class="spin"></div>Carregando mapa…</div>
+          <svg id="obsMapSvg" style="display:none"></svg>
+          <div class="obs-legend" id="obsLegend"></div>
+        </div>
+        <div class="obs-side-col">
+          <div class="obs-kpi-grid" id="obsKpis"></div>
+          <div class="obs-tabs" id="obsTabs">
+            <div class="obs-tab active" onclick="obsSetTab('serie')">Série</div>
+            <div class="obs-tab" onclick="obsSetTab('fontes')">Fontes</div>
+            <div class="obs-tab" onclick="obsSetTab('ranking')">Ranking</div>
+          </div>
+          <div style="flex:1;position:relative;min-height:0" id="obsChartArea">
+            <div class="obs-loading"><div class="spin"></div>Aguarde…</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('mapTip').style.display='none';
+  OBS.tabAtual = 'serie';
+  await obsRender();
+}
+
+let obsTabAtual = 'serie';
+function obsSetTab(t) {
+  obsTabAtual = t;
+  document.querySelectorAll('.obs-tab').forEach(el=>el.classList.toggle('active',el.textContent.toLowerCase().startsWith(t)));
+  obsUpdateSide();
+}
+
+function obsSetNivel(n) {
+  OBS.nivel = n;
+  document.querySelectorAll('.obs-btn').forEach(el=>{
+    const map = {brasil:'🇧🇷',regiao:'Regiões',estado:'Estados',municipios:'Municípios'};
+    el.classList.toggle('active', el.textContent.trim()===map[n]);
+  });
+  obsRender();
+}
+function obsSetDim(d)  { OBS.dimensao = d; obsRender(); }
+function obsSetAno(a)  { OBS.anoSel = a;   obsRender(); }
+
+async function obsRender() {
+  const nivel = OBS.nivel;
+  obsBreadcrumb();
+  if (nivel==='brasil')     await obsRenderBrasil();
+  else if (nivel==='regiao')await obsRenderRegioes();
+  else if (nivel==='estado')await obsRenderEstados();
+  else                       await obsRenderMunicipios();
+}
+
+function obsBreadcrumb() {
+  const bc = document.getElementById('obsBreadcrumb');
+  if (!bc) return;
+  let parts = [`<span onclick="obsSetNivel('brasil')" class="${OBS.nivel==='brasil'?'active':''}">🇧🇷 Brasil</span>`];
+  if (OBS.regiaoSel && ['regiao','estado','municipios'].includes(OBS.nivel))
+    parts.push(`<span class="sep">›</span><span onclick="obsSetNivel('regiao')" class="${OBS.nivel==='regiao'?'active':''}">${OBS.regiaoSel}</span>`);
+  if (OBS.estadoSel && ['estado','municipios'].includes(OBS.nivel))
+    parts.push(`<span class="sep">›</span><span onclick="obsSetNivel('estado')" class="${OBS.nivel==='estado'?'active':''}">${OBS.estadoSel}</span>`);
+  bc.innerHTML = parts.join('');
+}
+
+function obsKpis(dados) {
+  const kpis = document.getElementById('obsKpis');
+  if (!kpis) return;
+  const d = OBS_DIM[OBS.dimensao];
+  const items = [
+    {l:'Total (R$ bi)',   v:(dados.total||0).toFixed(1), u:'bi',  cls:'acc'},
+    {l:'LCA (R$ bi)',     v:(dados.lca||0).toFixed(1),   u:'bi',  cls:'acc2'},
+    {l:'LCA Share',       v:(dados.shareLCA||0).toFixed(1),u:'%', cls:'acc3'},
+    {l:d.label,           v:d.fmt(dados[OBS.dimensao]||0), u:d.unit, cls:'acc5'},
+  ];
+  kpis.innerHTML = items.map(i=>`
+    <div class="obs-kpi ${i.cls}">
+      <div class="obs-kpi-l">${i.l}</div>
+      <div class="obs-kpi-v">${i.v} <span class="obs-kpi-u">${i.u}</span></div>
+    </div>`).join('');
+}
+
+function obsSvgSetup() {
+  const svg = document.getElementById('obsMapSvg');
+  const loading = document.getElementById('obsLoading');
+  if (loading) loading.style.display='none';
+  svg.style.display='block';
+  return svg;
+}
+
+function obsSvgLoading() {
+  const svg = document.getElementById('obsMapSvg');
+  const loading = document.getElementById('obsLoading');
+  if (svg) svg.style.display='none';
+  if (loading) { loading.style.display='flex'; loading.innerHTML='<div class="spin"></div>Carregando mapa…'; }
+}
+
+function obsValor(dados, ano) {
+  if (!dados?.anos?.[ano]) return 0;
+  const d = dados.anos[ano];
+  const dim = OBS.dimensao;
+  if (dim==='custeio') return d.fontes ? Object.values(d.fontes).reduce((s,v)=>s+v,0)*0.6 : d.total*0.6; // aproximação
+  if (dim==='invest')  return d.total*0.3;
+  return d[dim] ?? d.total ?? 0;
+}
+
+function obsLegend(mn, mx, dim) {
+  const leg = document.getElementById('obsLegend');
+  if (!leg) return;
+  const steps = 5;
+  const unit = dim==='shareLCA'?'%':'bi';
+  let html = '<span style="font-family:var(--mono);font-size:7px;color:var(--mut);margin-right:6px">'+OBS_DIM[dim].label+':</span>';
+  for (let i=0;i<=steps;i++) {
+    const t = i/steps;
+    const v = mn + (mx-mn)*t;
+    html += `<div class="obs-leg-item">
+      <div class="obs-leg-box" style="background:${obsColor(mn+(mx-mn)*t,mn,mx)}"></div>
+      <span>${v.toFixed(dim==='shareLCA'?1:0)}${unit}</span>
+    </div>`;
+  }
+  leg.innerHTML = html;
+}
+
+// ── BRASIL ──
+async function obsRenderBrasil() {
+  const br = DB.mapa_brasil; if (!br) return;
+  const ano = OBS.anoSel;
+  const d = br[ano] || {};
+
+  obsKpis({total: d.total||0, lca: d.lca||0, shareLCA: d.shareLCA||0, [OBS.dimensao]: d[OBS.dimensao]||d.total||0});
+
+  // SVG simples do Brasil (regiões)
+  const svg = obsSvgSetup();
+  const anos = Object.keys(br).sort();
+  const vals = anos.map(a => br[a]?.total||0);
+
+  // Mapa SVG estático das regiões usando paths existentes
+  const regPaths = {
+    'NORTE':        'M135,125 L340,125 L340,275 L250,240 L215,255 L165,268 L135,255Z',
+    'NORDESTE':     'M340,125 L450,125 L450,240 L360,225 L340,205 L340,125Z',
+    'CENTRO-OESTE': 'M218,255 L355,215 L360,260 L352,318 L250,350 L208,288Z',
+    'SUDESTE':      'M320,310 L440,238 L445,268 L430,382 L280,355 L320,335Z',
+    'SUL':          'M248,355 L335,335 L340,445 L248,450Z',
+  };
+  const regCores = {'NORTE':'#4db8a0','NORDESTE':'#e8a020','CENTRO-OESTE':'#8866cc','SUDESTE':'#c8e63c','SUL':'#e05050'};
+
+  // Usa dados reais de regiões
+  const mr = DB.mapa_regioes;
+  let svgHtml = '<svg viewBox="120 120 350 370" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">';
+  if (mr) {
+    const regVals = Object.entries(mr).map(([reg,d])=>({reg, val:d.anos?.[ano]?.[OBS.dimensao]??d.anos?.[ano]?.total??0}));
+    const vals2 = regVals.map(r=>r.val);
+    const mn=Math.min(...vals2), mx2=Math.max(...vals2);
+    for (const {reg, val} of regVals) {
+      const path = regPaths[reg]||'';
+      const fill = obsColor(val, mn, mx2);
+      const tip = `${reg}: ${OBS_DIM[OBS.dimensao].fmt(val)}`;
+      svgHtml += `<path class="obs-feature" d="${path}" fill="${fill}"
+        onmouseenter="obsTip(event,'${tip}')" onmouseleave="obsHideTip()"
+        onclick="OBS.regiaoSel='${reg}';obsSetNivel('regiao')" title="${tip}"/>`;
+    }
+    obsLegend(mn, mx2, OBS.dimensao);
+  }
+  svgHtml += '</svg>';
+  svg.outerHTML = svgHtml + '<svg id="obsMapSvg" style="display:none"></svg>';
+  // Reaplica o svg visível
+  const svgEl = document.createElement('div');
+  svgEl.innerHTML = svgHtml;
+  const mapCol = document.getElementById('obsMapCol');
+  if (mapCol) {
+    // Remove old svg placeholder and insert real one
+    const oldSvg = document.getElementById('obsMapSvg');
+    if (oldSvg) oldSvg.remove();
+    mapCol.insertBefore(svgEl.firstChild, document.getElementById('obsLegend'));
+  }
+
+  obsUpdateSide();
+}
+
+// ── REGIÕES ──
+async function obsRenderRegioes() {
+  const mr = DB.mapa_regioes; if (!mr) return;
+  const ano = OBS.anoSel;
+  const sel = OBS.regiaoSel;
+  const d = sel && mr[sel] ? (mr[sel].anos?.[ano]||{}) : {};
+  obsKpis({total:d.total||0, lca:d.lca||0, shareLCA:d.shareLCA||0, [OBS.dimensao]:d[OBS.dimensao]??d.total??0});
+  await obsRenderBrasil(); // reutiliza o mapa de regiões
+  obsUpdateSide();
+}
+
+// ── ESTADOS ──
+async function obsRenderEstados() {
+  const me = DB.mapa_estados; if (!me) return;
+  const ano = OBS.anoSel;
+  const sel = OBS.estadoSel;
+
+  // Filtra por região se selecionada
+  const ufs = Object.entries(me).filter(([uf,d])=>!OBS.regiaoSel||d.regiao===OBS.regiaoSel);
+  const vals = ufs.map(([,d])=>d.anos?.[ano]?.[OBS.dimensao]??d.anos?.[ano]?.total??0);
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+
+  // Dados do estado selecionado
+  const dSel = sel && me[sel] ? (me[sel].anos?.[ano]||{}) : {total:0,lca:0,shareLCA:0};
+  obsKpis({total:dSel.total||0,lca:dSel.lca||0,shareLCA:dSel.shareLCA||0,[OBS.dimensao]:dSel[OBS.dimensao]??dSel.total??0});
+
+  // SVG com paths por UF
+  const UF_P = {
+    AC:"M135,255 L155,255 L165,268 L155,278 L140,278 L130,268Z",
+    AM:"M155,180 L215,170 L245,185 L260,210 L250,240 L215,255 L185,255 L165,268 L155,255 L145,235 L145,210Z",
+    RR:"M195,130 L235,125 L245,155 L235,175 L215,170 L200,160Z",
+    PA:"M260,170 L310,165 L330,180 L340,205 L325,225 L300,235 L270,240 L250,240 L260,210 L245,185Z",
+    AP:"M310,145 L335,145 L340,165 L320,168 L310,165Z",
+    TO:"M330,220 L355,215 L365,235 L360,260 L345,270 L325,265 L315,248 L320,230Z",
+    MA:"M340,190 L375,185 L385,205 L375,220 L355,215 L340,205Z",
+    PI:"M375,195 L400,192 L410,210 L400,225 L385,225 L375,220Z",
+    CE:"M400,185 L425,182 L435,198 L425,210 L410,210 L400,192Z",
+    RN:"M425,182 L448,183 L450,196 L435,198Z",
+    PB:"M415,198 L448,196 L447,207 L432,210 L415,207Z",
+    PE:"M398,208 L447,207 L447,220 L420,222 L398,218Z",
+    AL:"M435,218 L450,218 L452,228 L437,230Z",
+    SE:"M420,226 L437,224 L440,234 L425,236Z",
+    BA:"M360,225 L410,222 L440,238 L445,268 L430,295 L405,308 L378,305 L358,290 L345,268 L348,248Z",
+    MG:"M340,295 L378,303 L410,310 L420,335 L408,358 L388,368 L358,368 L335,355 L320,335 L325,310Z",
+    ES:"M410,318 L432,315 L438,338 L425,352 L410,355 L405,338Z",
+    RJ:"M388,368 L415,358 L428,372 L418,385 L395,382 L383,373Z",
+    SP:"M295,340 L335,335 L360,358 L360,380 L338,392 L308,390 L285,375 L280,355Z",
+    PR:"M265,358 L300,352 L335,365 L338,388 L315,400 L282,400 L258,385 L258,368Z",
+    SC:"M255,390 L285,390 L310,400 L308,415 L285,420 L258,415 L250,402Z",
+    RS:"M248,415 L285,415 L312,418 L315,445 L300,462 L270,465 L248,450 L238,430Z",
+    MS:"M255,325 L295,318 L322,330 L325,360 L305,368 L275,365 L250,350 L248,335Z",
+    MT:"M218,255 L270,248 L300,265 L305,300 L290,315 L255,322 L220,312 L208,288Z",
+    GO:"M300,280 L335,272 L355,290 L352,318 L330,330 L305,325 L288,310 L292,292Z",
+    DF:"M332,300 L342,300 L342,310 L332,310Z",
+    RO:"M200,258 L235,252 L250,268 L245,290 L225,298 L200,290 L190,275Z",
+  };
+  const UF_NAMES = {AC:"Acre",AM:"Amazonas",RR:"Roraima",PA:"Pará",AP:"Amapá",TO:"Tocantins",MA:"Maranhão",PI:"Piauí",CE:"Ceará",RN:"Rio Grande do Norte",PB:"Paraíba",PE:"Pernambuco",AL:"Alagoas",SE:"Sergipe",BA:"Bahia",MG:"Minas Gerais",ES:"Espírito Santo",RJ:"Rio de Janeiro",SP:"São Paulo",PR:"Paraná",SC:"Santa Catarina",RS:"Rio Grande do Sul",MS:"Mato Grosso do Sul",MT:"Mato Grosso",GO:"Goiás",DF:"Distrito Federal",RO:"Rondônia"};
+
+  const mapCol = document.getElementById('obsMapCol');
+  if (!mapCol) return;
+  const legEl = document.getElementById('obsLegend');
+
+  let svgHtml = '<svg viewBox="120 120 350 370" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;position:absolute;inset:0">';
+  for (const [uf, path] of Object.entries(UF_P)) {
+    const d2 = me[uf]?.anos?.[ano]||{};
+    const val = d2[OBS.dimensao]??d2.total??0;
+    const fill = val>0 ? obsColor(val,mn,mx) : '#1e1e1e';
+    const isSel = uf === sel;
+    const nome = UF_NAMES[uf]||uf;
+    const tip = `${nome} (${uf})\nTotal: R$${(d2.total||0).toFixed(1)}bi\nLCA: ${(d2.shareLCA||0).toFixed(1)}%`;
+    const ns = [[],[],[]].map((_,i)=>{const ns=path.match(/[\d.]+/g).map(Number);let xs=[],ys=[];for(let j=0;j<ns.length;j+=2){xs.push(ns[j]);ys.push(ns[j+1]);}return [xs.reduce((a,b)=>a+b)/xs.length,ys.reduce((a,b)=>a+b)/ys.length];})[0];
+    const nums=path.match(/[\d.]+/g).map(Number);let xs=[],ys=[];for(let j=0;j<nums.length;j+=2){xs.push(nums[j]);ys.push(nums[j+1]);}
+    const cx=xs.reduce((a,b)=>a+b)/xs.length, cy=ys.reduce((a,b)=>a+b)/ys.length;
+    svgHtml += `<path class="obs-feature${isSel?' selected':''}" d="${path}" fill="${fill}"
+      stroke="${isSel?'#c8e63c':'#0f0f0f'}" stroke-width="${isSel?2.5:.5}"
+      onmouseenter="obsTip(event,'${tip.replace(/'/g,'&apos;')}')"
+      onmouseleave="obsHideTip()"
+      onclick="OBS.estadoSel='${uf}';obsSetNivel('municipios')"/>`;
+    if (val>0) svgHtml += `<text x="${cx}" y="${cy+3}" font-size="6" text-anchor="middle" fill="#0f0f0f88" font-family="monospace" pointer-events="none">${uf}</text>`;
+  }
+  svgHtml += '</svg>';
+  obsLegend(mn,mx,OBS.dimensao);
+
+  // Inject SVG
+  const existing = mapCol.querySelector('svg,div.obs-loading');
+  if (existing) existing.remove();
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;flex:1;min-height:0';
+  wrapper.innerHTML = svgHtml;
+  if (legEl) mapCol.insertBefore(wrapper, legEl);
+  else mapCol.appendChild(wrapper);
+
+  obsUpdateSide();
+}
+
+// ── MUNICÍPIOS ──
+async function obsRenderMunicipios() {
+  const mm = DB.mapa_municipios; if (!mm) return;
+  const me = DB.mapa_estados;
+  const uf = OBS.estadoSel;
+  const ano = OBS.anoSel;
+
+  // Filtra municípios do estado selecionado
+  const muns = uf ? mm.filter(m=>m.uf===uf) : mm.slice(0,500);
+  const dEst = uf && me?.[uf]?.anos?.[ano] ? me[uf].anos[ano] : {total:0,lca:0,shareLCA:0};
+  obsKpis({total:dEst.total||0,lca:dEst.lca||0,shareLCA:dEst.shareLCA||0,[OBS.dimensao]:dEst[OBS.dimensao]??dEst.total??0});
+
+  const vals = muns.map(m=>m[OBS.dimensao]??m.total??0).filter(v=>v>0);
+  const mn=Math.min(...vals)||0, mx=Math.max(...vals)||1;
+
+  // Mapa de pontos (círculos proporcionais)
+  const mapCol = document.getElementById('obsMapCol');
+  if (!mapCol) return;
+
+  // Viewbox centrado no estado ou brasil
+  const UF_VB = {
+    RS:'220,410,120,70',PR:'240,345,110,70',SC:'230,380,90,50',
+    SP:'265,325,105,80',RJ:'370,350,80,55',MG:'305,275,135,105',
+    ES:'395,305,55,60',BA:'335,205,125,115',GO:'275,260,95,80',
+    DF:'325,295,25,20',MS:'235,310,100,70',MT:'195,235,115,90',
+    PA:'240,155,110,90',AM:'135,155,130,110',RO:'182,240,80,65',
+    AC:'122,245,55,40',AP:'300,135,50,40',RR:'188,118,65,65',
+    TO:'308,208,70,70',MA:'330,178,65,50',PI:'365,185,55,50',
+    CE:'392,175,65,45',RN:'418,175,40,30',PB:'408,190,48,25',
+    PE:'390,200,65,25',AL:'428,212,30,25',SE:'413,218,35,23',
+  };
+  const vb = uf && UF_VB[uf] ? UF_VB[uf] : '120,120,360,370';
+
+  let svgHtml = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;position:absolute;inset:0;background:#0a0a0a">`;
+
+  // Fundo do estado
+  const UF_P = {AC:"M135,255 L155,255 L165,268 L155,278 L140,278 L130,268Z",AM:"M155,180 L215,170 L245,185 L260,210 L250,240 L215,255 L185,255 L165,268 L155,255 L145,235 L145,210Z",RR:"M195,130 L235,125 L245,155 L235,175 L215,170 L200,160Z",PA:"M260,170 L310,165 L330,180 L340,205 L325,225 L300,235 L270,240 L250,240 L260,210 L245,185Z",AP:"M310,145 L335,145 L340,165 L320,168 L310,165Z",TO:"M330,220 L355,215 L365,235 L360,260 L345,270 L325,265 L315,248 L320,230Z",MA:"M340,190 L375,185 L385,205 L375,220 L355,215 L340,205Z",PI:"M375,195 L400,192 L410,210 L400,225 L385,225 L375,220Z",CE:"M400,185 L425,182 L435,198 L425,210 L410,210 L400,192Z",RN:"M425,182 L448,183 L450,196 L435,198Z",PB:"M415,198 L448,196 L447,207 L432,210 L415,207Z",PE:"M398,208 L447,207 L447,220 L420,222 L398,218Z",AL:"M435,218 L450,218 L452,228 L437,230Z",SE:"M420,226 L437,224 L440,234 L425,236Z",BA:"M360,225 L410,222 L440,238 L445,268 L430,295 L405,308 L378,305 L358,290 L345,268 L348,248Z",MG:"M340,295 L378,303 L410,310 L420,335 L408,358 L388,368 L358,368 L335,355 L320,335 L325,310Z",ES:"M410,318 L432,315 L438,338 L425,352 L410,355 L405,338Z",RJ:"M388,368 L415,358 L428,372 L418,385 L395,382 L383,373Z",SP:"M295,340 L335,335 L360,358 L360,380 L338,392 L308,390 L285,375 L280,355Z",PR:"M265,358 L300,352 L335,365 L338,388 L315,400 L282,400 L258,385 L258,368Z",SC:"M255,390 L285,390 L310,400 L308,415 L285,420 L258,415 L250,402Z",RS:"M248,415 L285,415 L312,418 L315,445 L300,462 L270,465 L248,450 L238,430Z",MS:"M255,325 L295,318 L322,330 L325,360 L305,368 L275,365 L250,350 L248,335Z",MT:"M218,255 L270,248 L300,265 L305,300 L290,315 L255,322 L220,312 L208,288Z",GO:"M300,280 L335,272 L355,290 L352,318 L330,330 L305,325 L288,310 L292,292Z",DF:"M332,300 L342,300 L342,310 L332,310Z",RO:"M200,258 L235,252 L250,268 L245,290 L225,298 L200,290 L190,275Z"};
+  if (uf && UF_P[uf]) svgHtml += `<path d="${UF_P[uf]}" fill="#1a2a1a" stroke="#2a4a2a" stroke-width=".5"/>`;
+
+  // Círculos dos municípios
+  const maxR = 3.5, minR = 0.4;
+  for (const m of muns.slice(0,300)) {
+    const val = m[OBS.dimensao]??m.total??0;
+    if (val <= 0) continue;
+    const r = minR + (val-mn)/(mx-mn) * (maxR-minR);
+    const fill = obsColor(val,mn,mx);
+    const tip = `${m.nome} (${m.uf})\nTotal: R$${m.total.toFixed(2)}bi\nLCA: ${m.shareLCA.toFixed(1)}%\nCusteio: R$${m.custeio.toFixed(2)}bi`;
+    svgHtml += `<circle cx="${m.lon}" cy="${m.lat}" r="${r}" fill="${fill}" opacity=".85"
+      onmouseenter="obsTip(event,'${tip.replace(/'/g,"&apos;")}')"
+      onmouseleave="obsHideTip()" style="cursor:pointer"/>`;
+  }
+  svgHtml += '</svg>';
+  obsLegend(mn,mx,OBS.dimensao);
+
+  const existing = mapCol.querySelector('svg,div.obs-loading,.obs-loading');
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText='position:relative;flex:1;min-height:0';
+  wrapper.innerHTML = svgHtml;
+  const legEl = document.getElementById('obsLegend');
+  if (existing) existing.remove();
+  if (legEl) mapCol.insertBefore(wrapper, legEl);
+  else mapCol.appendChild(wrapper);
+
+  obsUpdateSide();
+}
+
+function obsTip(e, txt) {
+  const tip = document.getElementById('mapTip');
+  tip.style.display='block';
+  tip.style.left=(e.clientX+14)+'px';
+  tip.style.top=(e.clientY-8)+'px';
+  tip.innerHTML = txt.replace(/\n/g,'<br>');
+}
+function obsHideTip() { document.getElementById('mapTip').style.display='none'; }
+
+function obsUpdateSide() {
+  const area = document.getElementById('obsChartArea');
+  if (!area) return;
+
+  if (OBS.chartObs) { OBS.chartObs.destroy(); OBS.chartObs=null; }
+  area.innerHTML = '<canvas id="obsChart"></canvas>';
+  area.style.position='relative';
+
+  const tab = obsTabAtual;
+  const ano = OBS.anoSel;
+  const nivel = OBS.nivel;
+
+  if (tab==='serie') {
+    // Série temporal da seleção atual
+    const anos = Object.keys(DB.mapa_brasil||{}).sort();
+    let serieData;
+    if (nivel==='brasil' || nivel==='regiao') {
+      const src = nivel==='regiao' && OBS.regiaoSel ? DB.mapa_regioes?.[OBS.regiaoSel] : DB.mapa_brasil;
+      serieData = anos.map(a=>src?.anos?.[a]?.[OBS.dimensao]??src?.[a]?.[OBS.dimensao]??src?.[a]?.total??0);
+    } else if (nivel==='estado' || nivel==='municipios') {
+      const src = DB.mapa_estados?.[OBS.estadoSel];
+      serieData = anos.map(a=>src?.anos?.[a]?.[OBS.dimensao]??src?.anos?.[a]?.total??0);
+    }
+    const dim = OBS_DIM[OBS.dimensao];
+    OBS.chartObs = new Chart(document.getElementById('obsChart'), {
+      type:'line',
+      data:{labels:anos,datasets:[{
+        label:dim.label,
+        data:serieData||[],
+        borderColor:'#c8e63c',backgroundColor:'#c8e63c15',
+        borderWidth:2.5,pointRadius:3,fill:true,tension:.3,
+      }]},
+      options:{...gopts,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${dim.fmt(+c.raw)}`}}},
+        scales:{
+          x:{grid:{color:'#1e1e1e'},ticks:{color:'#5a5248',font:{size:8}}},
+          y:{grid:{color:'#1e1e1e'},ticks:{callback:v=>`${v.toFixed(1)}${dim.unit}`,color:'#5a5248',font:{size:8}}},
+        }
+      }
+    });
+
+  } else if (tab==='fontes') {
+    // Composição por fontes da seleção
+    let fontesData = {};
+    if (nivel==='brasil') fontesData = DB.mapa_brasil?.[ano]?.fontes||{};
+    else if (nivel==='regiao'&&OBS.regiaoSel) fontesData = DB.mapa_regioes?.[OBS.regiaoSel]?.anos?.[ano]?.fontes||{};
+    else if ((nivel==='estado'||nivel==='municipios')&&OBS.estadoSel) fontesData = DB.mapa_estados?.[OBS.estadoSel]?.anos?.[ano]?.fontes||{};
+
+    const labels = Object.keys(fontesData);
+    const values = Object.values(fontesData);
+    const cores = labels.map(l=>({
+      'LCA Livre':'#c8e63c','LCA Controlada':'#a0c020','CRA':'#60d0a0',
+      'BNDES/FAT':'#4db8a0','Fundos Constitucionais':'#e8a020','Poupança Rural':'#8866cc',
+      'Obrigatórios':'#e05050','Fundos Setoriais':'#5090e0','Equalização/Tesouro':'#d060a0','Outros':'#606060',
+    }[l]||'#808080'));
+
+    OBS.chartObs = new Chart(document.getElementById('obsChart'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:values,backgroundColor:cores,borderWidth:2,borderColor:'#0f0f0f',hoverOffset:5}]},
+      options:{...gopts,cutout:'55%',
+        plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:6,font:{size:7.5},boxWidth:8,boxHeight:8}},
+                 tooltip:{callbacks:{label:c=>`${c.label}: R$${(+c.raw).toFixed(2)}bi`}}}
+      }
+    });
+
+  } else if (tab==='ranking') {
+    // Ranking municípios ou estados
+    area.innerHTML='';
+    area.style.overflow='auto';
+    let rows=[];
+    if (nivel==='municipios') {
+      const uf=OBS.estadoSel;
+      rows = (DB.mapa_municipios||[]).filter(m=>!uf||m.uf===uf).sort((a,b)=>b.total-a.total).slice(0,30);
+    } else {
+      const me=DB.mapa_estados||{};
+      rows = Object.entries(me).map(([uf,d])=>({nome:uf,total:d.anos?.[ano]?.total||0,lca:d.anos?.[ano]?.lca||0,shareLCA:d.anos?.[ano]?.shareLCA||0})).sort((a,b)=>b.total-a.total);
+    }
+    const mx2 = rows[0]?.total||1;
+    let html=`<table class="tbl"><thead><tr><th>#</th><th>Nome</th><th>R$ bi</th><th>LCA%</th></tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const nome = r.nome||r.municipio||r.uf||'';
+      const w = Math.max(2,(r.total/mx2)*70);
+      html+=`<tr><td class="num" style="color:var(--mut)">${i+1}</td><td>${nome}</td>
+        <td class="num"><div class="bar-cell"><div class="mini-bar" style="width:${w}px;background:#c8e63c"></div>${r.total.toFixed(1)}</div></td>
+        <td class="num">${(r.shareLCA||0).toFixed(1)}%</td></tr>`;
+    });
+    html+='</tbody></table>';
+    area.innerHTML=html;
+  }
 }
 
 // ── PORTE ──
@@ -1095,9 +1651,11 @@ async function renderGenero(panels) {
   // 1 - Evolução linha
   if (ge.serie_genero_ano) {
     const gens = ['Masculino','Feminino','Não informado'];
+    // Normaliza campo gênero
+    const geRows = (ge.serie_genero_ano||[]).map(r=>({...r, nomeGenero: normGenero(r)}));
     lineMulti('c1', anos, gens.map(g=>({
       label:g,
-      data:anos.map(a=>ge.serie_genero_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomeGenero===g).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      data:anos.map(a=>geRows.filter(r=>String(r.AnoEmissao)===a&&r.nomeGenero===g).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
       borderColor:genC[g],backgroundColor:genC[g]+'15',borderWidth:2,pointRadius:2,fill:g==='Feminino',tension:.3,
     })));
   }

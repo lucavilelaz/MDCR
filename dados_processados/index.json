@@ -1,0 +1,162 @@
+{
+  "gerado_em": "2026-05-07 16:32",
+  "fonte": "BCB/SICOR · MDCR v2 · ODbL",
+  "arquivos": {
+    "comercializacao": {
+      "arquivo": "comercializacao.json",
+      "tabelas": [
+        "serie_anual",
+        "serie_uf_ano",
+        "top_produtos"
+      ],
+      "mb": 0.1
+    },
+    "custeio_municipio": {
+      "arquivo": "custeio_municipio.json",
+      "tabelas": [
+        "top_produtos",
+        "serie_ano"
+      ],
+      "mb": 0.0
+    },
+    "custeio_regiao": {
+      "arquivo": "custeio_regiao.json",
+      "tabelas": [
+        "serie_anual",
+        "serie_uf_ano",
+        "serie_regiao_ano",
+        "atividade",
+        "top_produtos",
+        "lca_share_uf"
+      ],
+      "mb": 0.3
+    },
+    "faixa_uf": {
+      "arquivo": "faixa_uf.json",
+      "tabelas": [
+        "faixa_uf_fonte_ano",
+        "faixa_fonte_ano"
+      ],
+      "mb": 3.7
+    },
+    "faixa_valores": {
+      "arquivo": "faixa_valores.json",
+      "tabelas": [
+        "faixa_ano",
+        "valor_medio"
+      ],
+      "mb": 0.0
+    },
+    "fonte_if": {
+      "arquivo": "fonte_if.json",
+      "tabelas": [
+        "banco_fonte_ano",
+        "serie_anual",
+        "lca_share_banco",
+        "ranking_bancos"
+      ],
+      "mb": 3.0
+    },
+    "fonte_recursos": {
+      "arquivo": "fonte_recursos.json",
+      "tabelas": [
+        "serie_mensal",
+        "serie_anual",
+        "atividade"
+      ],
+      "mb": 0.2
+    },
+    "genero": {
+      "arquivo": "genero.json",
+      "tabelas": [
+        "serie_genero_ano",
+        "serie_genero_uf_ano",
+        "serie_genero_reg"
+      ],
+      "mb": 0.1
+    },
+    "invest_municipio": {
+      "arquivo": "invest_municipio.json",
+      "tabelas": [
+        "top_produtos",
+        "serie_uf_ano",
+        "top_mun_produto"
+      ],
+      "mb": 0.3
+    },
+    "invest_regiao": {
+      "arquivo": "invest_regiao.json",
+      "tabelas": [
+        "serie_anual",
+        "serie_uf_ano",
+        "serie_regiao_ano",
+        "atividade",
+        "top_produtos",
+        "lca_share_uf"
+      ],
+      "mb": 0.4
+    },
+    "municipios": {
+      "arquivo": "municipios.json",
+      "tabelas": [
+        "top_municipios",
+        "serie_uf_ano"
+      ],
+      "mb": 0.3
+    },
+    "prog_sub_uf": {
+      "arquivo": "prog_sub_uf.json",
+      "tabelas": [
+        "serie_sub_uf_ano",
+        "serie_prog_uf_ano",
+        "abc_uf_ano"
+      ],
+      "mb": 3.9
+    },
+    "prog_subprograma": {
+      "arquivo": "prog_subprograma.json",
+      "tabelas": [
+        "serie_prog_ano",
+        "serie_sub_ano",
+        "ranking_sub"
+      ],
+      "mb": 0.3
+    },
+    "regiao_uf": {
+      "arquivo": "regiao_uf.json",
+      "tabelas": [
+        "serie_uf_ano",
+        "serie_regiao_ano",
+        "lca_share_uf"
+      ],
+      "mb": 0.5
+    },
+    "seg_if_uf": {
+      "arquivo": "seg_if_uf.json",
+      "tabelas": [
+        "seg_uf_fonte_ano",
+        "banco_uf_ano",
+        "seg_reg_ano"
+      ],
+      "mb": 3.2
+    },
+    "segmento_if": {
+      "arquivo": "segmento_if.json",
+      "tabelas": [
+        "seg_fonte_ano",
+        "banco_seg_ano",
+        "serie_seg_ano",
+        "lca_share_seg"
+      ],
+      "mb": 0.9
+    },
+    "tipo_pessoa": {
+      "arquivo": "tipo_pessoa.json",
+      "tabelas": [
+        "seg_fonte_ano",
+        "genero_seg_ano"
+      ],
+      "mb": 0.1
+    }
+  }
+}

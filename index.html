@@ -1016,291 +1016,418 @@ async function renderABC(panels) {
 }
 
 
-// ── MAPA (DRILL-DOWN) ──────────────────────────────────────
-// Estado do mapa
+// ── MAPA (LEAFLET DRILL-DOWN) ──────────────────────────────────────
+
 const MAPA = {
-  nivel: 'estados',   // estados | municipios
-  ufSel: null,
+  nivel:    'estados',
+  ufSel:    null,
+  ufNome:   null,
   dimensao: 'total',
-  anoSel: '2023',
-  chartMapa: null,
-  tabMapa: 'serie',
+  anoSel:   '2023',
+  tabMapa:  'serie',
+  map:      null,
+  layerEstados:   null,
+  layerMunicipios:null,
+  chartMapa:      null,
+  geoEstados:     null,
+  geoMunicipios:  null,
 };
 
 const MAPA_DIM = {
-  total:    {label:'Volume Total (R$ bi)', fmt: v => v.toFixed(2)+'bi'},
-  lca:      {label:'LCA (R$ bi)',          fmt: v => v.toFixed(2)+'bi'},
-  shareLCA: {label:'LCA Share (%)',        fmt: v => v.toFixed(1)+'%'},
+  total:    { label:'Volume Total', unit:'R$ bi', fmt: v => v.toFixed(2)+' bi' },
+  lca:      { label:'LCA',          unit:'R$ bi', fmt: v => v.toFixed(2)+' bi' },
+  shareLCA: { label:'LCA Share',    unit:'%',     fmt: v => v.toFixed(1)+'%'   },
 };
 
+// Injeta Leaflet CSS+JS uma vez
+function leafletInject(cb) {
+  if (window.L) { cb(); return; }
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+  document.head.appendChild(css);
+  const sc = document.createElement('script');
+  sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  sc.onload = cb;
+  document.head.appendChild(sc);
+}
 
+// Escala de cor verde escuro → lima
 function mapaColor(val, mn, mx) {
-  if (mx <= mn) return '#1a2a1a';
-  const t = Math.pow((val - mn) / (mx - mn), 0.5);
-  const r = Math.round(20 + (180-20)*t);
-  const g = Math.round(35 + (230-35)*t);
-  const b = Math.round(22 + (60-22)*t);
+  if (!val || mx <= mn) return '#1a2a1a';
+  const t = Math.pow((val - mn) / (mx - mn), 0.55);
+  const r = Math.round(15  + (190-15 )*t);
+  const g = Math.round(40  + (230-40 )*t);
+  const b = Math.round(20  + (55 -20 )*t);
   return `rgb(${r},${g},${b})`;
 }
 
-function mapaGetVal(dadosUF, dim) {
-  if (!dadosUF) return 0;
-  return dadosUF[dim] ?? dadosUF.total ?? 0;
+function mapaVal(d) {
+  if (!d) return 0;
+  const dim = MAPA.dimensao;
+  return d[dim] ?? d.total ?? 0;
 }
 
+// ── RENDER PRINCIPAL ────────────────────────────────────────────────
 async function renderMapa(panels) {
   panels.style.cssText = 'grid-template-columns:1fr;grid-template-rows:1fr';
   panels.innerHTML = `
     <div class="panel" style="display:flex;flex-direction:column;overflow:hidden">
 
-      <!-- BARRA DE CONTROLES -->
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bor);flex-shrink:0;flex-wrap:wrap">
+      <!-- CONTROLES -->
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--bor);flex-shrink:0;flex-wrap:wrap">
         <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">VISUALIZAR:</span>
         <button id="mBtnEst" class="mapa-btn active" onclick="mapaSetNivel('estados')">Estados</button>
-        <button id="mBtnMun" class="mapa-btn" onclick="mapaSetNivel('municipios')">Municípios</button>
+        <button id="mBtnMun" class="mapa-btn" onclick="mapaSetNivel('municipios')" id="mBtnMun">Municípios</button>
+        <div id="mBtnBack" style="display:none">
+          <button class="mapa-btn" onclick="mapaVoltar()">← Voltar para estados</button>
+        </div>
         <span style="flex:1"></span>
         <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">DIMENSÃO:</span>
-        <select id="mDim" class="mapa-sel" onchange="MAPA.dimensao=this.value;mapaRender()">
+        <select class="mapa-sel" onchange="MAPA.dimensao=this.value;mapaRefresh()">
           <option value="total">Volume Total</option>
           <option value="lca">LCA (R$ bi)</option>
           <option value="shareLCA">LCA Share (%)</option>
         </select>
         <span style="font-family:var(--mono);font-size:8px;color:var(--mut)">ANO:</span>
-        <select id="mAno" class="mapa-sel" onchange="MAPA.anoSel=this.value;mapaRender()">
-          ${['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'].map(a=>`<option value="${a}"${a==='2023'?' selected':''}>${a}</option>`).join('')}
+        <select class="mapa-sel" onchange="MAPA.anoSel=this.value;mapaRefresh()">
+          ${['2013','2014','2015','2016','2017','2018','2019','2020',
+             '2021','2022','2023','2024','2025'].map(a=>
+            `<option value="${a}"${a==='2023'?' selected':''}>${a}</option>`).join('')}
         </select>
-        <button class="mapa-btn" id="mBtnBack" onclick="mapaBack()" style="display:none">← Voltar</button>
       </div>
 
       <!-- BREADCRUMB -->
       <div id="mBread" style="padding:4px 14px;font-family:var(--mono);font-size:9px;color:var(--mut);border-bottom:1px solid var(--bor);flex-shrink:0">
-        🇧🇷 Brasil
+        🇧🇷 Brasil · Estados · 2023
       </div>
 
-      <!-- CORPO: mapa + painel lateral -->
-      <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+      <!-- CORPO -->
+      <div style="display:flex;flex:1;min-height:0;overflow:hidden">
 
-        <!-- MAPA SVG -->
-        <div style="flex:1.5;position:relative;border-right:1px solid var(--bor)">
-          <svg id="mSvg" viewBox="120 120 360 370"
-               xmlns="http://www.w3.org/2000/svg"
-               style="width:100%;height:100%;display:block"></svg>
-          <!-- legenda gradiente -->
-          <div id="mLeg" style="position:absolute;bottom:8px;left:12px;display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8px;color:var(--mut)"></div>
+        <!-- MAPA -->
+        <div style="flex:1.6;position:relative;border-right:1px solid var(--bor)">
+          <div id="leafletMap" style="width:100%;height:100%;background:#0a0f0a"></div>
         </div>
 
         <!-- PAINEL LATERAL -->
         <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden">
-
-          <!-- KPIs do selecionado -->
           <div id="mKpis" style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bor);flex-shrink:0"></div>
-
-          <!-- Tabs -->
           <div style="display:flex;border-bottom:1px solid var(--bor);flex-shrink:0">
-            <div class="mapa-tab active" onclick="mapaSetTab('serie')" id="mtSerie">Série</div>
-            <div class="mapa-tab" onclick="mapaSetTab('fontes')" id="mtFontes">Fontes</div>
-            <div class="mapa-tab" onclick="mapaSetTab('ranking')" id="mtRanking">Ranking</div>
+            <div class="mapa-tab active" onclick="mapaSetTab('serie')"   id="mtSerie">Série</div>
+            <div class="mapa-tab"        onclick="mapaSetTab('fontes')"  id="mtFontes">Fontes</div>
+            <div class="mapa-tab"        onclick="mapaSetTab('ranking')" id="mtRanking">Ranking</div>
           </div>
-
-          <!-- Área do gráfico/tabela lateral -->
           <div style="flex:1;position:relative;min-height:0;overflow:auto" id="mChartArea">
             <canvas id="mChart" style="position:absolute;inset:8px"></canvas>
           </div>
-
         </div>
+
       </div>
     </div>`;
 
-  // Injeta CSS específico do mapa se ainda não existe
+  // CSS específico do mapa (injeta uma vez)
   if (!document.getElementById('mapaCSS')) {
-    const style = document.createElement('style');
-    style.id = 'mapaCSS';
-    style.textContent = `
-      .mapa-btn{font-family:var(--mono);font-size:8px;padding:4px 10px;border-radius:2px;border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;transition:all .1s}
-      .mapa-btn:hover{border-color:var(--acc);color:var(--acc)}
-      .mapa-btn.active{background:var(--acc);color:#000;border-color:var(--acc);font-weight:600}
-      .mapa-sel{font-family:var(--mono);font-size:8px;padding:4px 8px;border-radius:2px;border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;outline:none}
-      .mapa-sel:focus{border-color:var(--acc)}
-      .mapa-tab{padding:6px 12px;font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;flex:1;text-align:center}
-      .mapa-tab:hover{color:var(--mid)}
-      .mapa-tab.active{color:var(--acc);border-bottom-color:var(--acc)}
-      .uf-path{cursor:pointer;transition:opacity .1s,stroke-width .1s;stroke:#0f0f0f;stroke-width:.5}
-      .uf-path:hover{opacity:.75;stroke:var(--acc);stroke-width:2}
-      .uf-path.sel{stroke:var(--acc);stroke-width:2.5}
-      .mun-circle{cursor:pointer;transition:opacity .1s}
-      .mun-circle:hover{opacity:.6}
+    const s = document.createElement('style');
+    s.id = 'mapaCSS';
+    s.textContent = `
+      .mapa-btn{font-family:var(--mono);font-size:8px;padding:4px 10px;border-radius:2px;
+        border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;transition:all .1s}
+      .mapa-btn:hover{border-color:#c8e63c;color:#c8e63c}
+      .mapa-btn.active{background:#c8e63c;color:#000;border-color:#c8e63c;font-weight:700}
+      .mapa-sel{font-family:var(--mono);font-size:8px;padding:4px 8px;border-radius:2px;
+        border:1px solid var(--bor2);background:var(--s2);color:var(--mid);cursor:pointer;outline:none}
+      .mapa-sel:focus{border-color:#c8e63c}
+      .mapa-tab{padding:6px 0;font-family:var(--mono);font-size:8px;text-transform:uppercase;
+        letter-spacing:.08em;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;
+        margin-bottom:-1px;flex:1;text-align:center;transition:all .1s}
+      .mapa-tab:hover{color:#a09890}
+      .mapa-tab.active{color:#c8e63c;border-bottom-color:#c8e63c}
       .mapa-kpi{background:var(--s2);padding:8px 10px}
-      .mapa-kpi-l{font-family:var(--mono);font-size:7px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
-      .mapa-kpi-v{font-family:var(--sans);font-size:17px;font-weight:700;line-height:1;color:var(--txt)}
+      .mapa-kpi-l{font-family:var(--mono);font-size:7px;color:var(--mut);
+        text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+      .mapa-kpi-v{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;
+        line-height:1;color:#e8e4dc}
       .mapa-kpi-u{font-family:var(--mono);font-size:8px;color:var(--mut)}
+      /* Leaflet dark overrides */
+      .leaflet-container{background:#0a0f0a!important;font-family:var(--mono)}
+      .leaflet-control-zoom a{background:#161616!important;color:#a09890!important;
+        border-color:#2a2a2a!important}
+      .leaflet-control-zoom a:hover{background:#1e1e1e!important;color:#c8e63c!important}
+      .leaflet-popup-content-wrapper{background:#1e1e1e;border:1px solid #2a2a2a;
+        border-radius:3px;color:#e8e4dc;font-family:var(--mono);font-size:9px;
+        box-shadow:0 4px 20px #00000088}
+      .leaflet-popup-tip{background:#1e1e1e}
+      .leaflet-popup-close-button{color:#5a5248!important}
+      .leaflet-bar{border:1px solid #2a2a2a!important}
     `;
-    document.head.appendChild(style);
+    document.head.appendChild(s);
   }
 
-  await mapaRender();
-}
-
-function mapaSetNivel(n) {
-  MAPA.nivel = n;
-  if (n === 'estados') { MAPA.ufSel = null; }
-  document.getElementById('mBtnEst')?.classList.toggle('active', n==='estados');
-  document.getElementById('mBtnMun')?.classList.toggle('active', n==='municipios');
-  mapaRender();
-}
-
-function mapaSetTab(t) {
-  MAPA.tabMapa = t;
-  ['serie','fontes','ranking'].forEach(x => {
-    document.getElementById('mt'+x.charAt(0).toUpperCase()+x.slice(1))?.classList.toggle('active', x===t);
+  leafletInject(async () => {
+    await mapaInit();
   });
-  mapaUpdateSide();
 }
 
-function mapaBack() {
-  MAPA.nivel = 'estados';
-  MAPA.ufSel = null;
-  document.getElementById('mBtnBack').style.display = 'none';
-  document.getElementById('mBtnEst')?.classList.add('active');
-  document.getElementById('mBtnMun')?.classList.remove('active');
-  mapaRender();
-}
+async function mapaInit() {
+  // Destrói mapa anterior se existir
+  if (MAPA.map) { MAPA.map.remove(); MAPA.map = null; }
 
-async function mapaRender() {
+  const container = document.getElementById('leafletMap');
+  if (!container) return;
+
+  // Cria mapa Leaflet com tile escuro
+  MAPA.map = L.map('leafletMap', {
+    center: [-14, -52],
+    zoom: 4,
+    zoomControl: true,
+    attributionControl: false,
+  });
+
+  // Tile escuro (CartoDB Dark Matter)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd',
+  }).addTo(MAPA.map);
+
+  // Carrega GeoJSONs se ainda não carregados
+  await mapaCarregarGeos();
+
+  // Renderiza camada inicial
   if (MAPA.nivel === 'estados') await mapaRenderEstados();
   else                           await mapaRenderMunicipios();
+
+  mapaUpdateKpis();
   mapaUpdateSide();
 }
 
-async function mapaRenderEstados() {
-  const me = DB.mapa_estados;
-  if (!me) { document.getElementById('mSvg').innerHTML='<text x="50%" y="50%" fill="#5a5248" font-family="monospace" font-size="12" text-anchor="middle">Carregando mapa_estados.json…</text>'; return; }
+async function mapaCarregarGeos() {
+  if (!MAPA.geoEstados) {
+    try {
+      const r = await fetch('./dados_processados/geojson_estados.json');
+      MAPA.geoEstados = await r.json();
+    } catch(e) {
+      console.warn('GeoJSON estados não encontrado:', e);
+    }
+  }
+  if (!MAPA.geoMunicipios) {
+    try {
+      const r = await fetch('./dados_processados/geojson_municipios.json');
+      MAPA.geoMunicipios = await r.json();
+    } catch(e) {
+      console.warn('GeoJSON municípios não encontrado:', e);
+    }
+  }
+}
 
+// ── ESTADOS ─────────────────────────────────────────────────────────
+async function mapaRenderEstados() {
+  if (!MAPA.map || !MAPA.geoEstados) return;
+
+  // Remove camadas anteriores
+  if (MAPA.layerEstados)    { MAPA.map.removeLayer(MAPA.layerEstados); }
+  if (MAPA.layerMunicipios) { MAPA.map.removeLayer(MAPA.layerMunicipios); }
+
+  const me  = DB.mapa_estados || {};
   const ano = MAPA.anoSel;
   const dim = MAPA.dimensao;
 
-  // Calcula valores para escala de cor
-  const vals = Object.entries(me).map(([uf, d]) => mapaGetVal(d.anos?.[ano], dim)).filter(v => v > 0);
-  const mn = Math.min(...vals), mx = Math.max(...vals);
+  // Calcula escala
+  const vals = Object.values(me).map(d => mapaVal(d.anos?.[ano])).filter(v=>v>0);
+  const mn = Math.min(...vals)||0, mx = Math.max(...vals)||1;
+
+  // Função para obter sigla do GeoJSON
+  // O IBGE usa 'codarea' ou o código numérico — precisamos mapear para sigla
+  const COD_UF = {
+    '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+    '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL',
+    '28':'SE','29':'BA','31':'MG','32':'ES','33':'RJ','35':'SP',
+    '41':'PR','42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF',
+  };
+
+  MAPA.layerEstados = L.geoJSON(MAPA.geoEstados, {
+    style: feature => {
+      const cod = String(feature.properties.codarea || feature.properties.CD_GEOCUF || '').slice(0,2);
+      const uf  = COD_UF[cod] || cod;
+      const d   = me[uf]?.anos?.[ano];
+      const val = mapaVal(d);
+      return {
+        fillColor:   mapaColor(val, mn, mx),
+        fillOpacity: 0.85,
+        color:       '#0a0f0a',
+        weight:      1,
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const cod  = String(feature.properties.codarea || feature.properties.CD_GEOCUF || '').slice(0,2);
+      const uf   = COD_UF[cod] || cod;
+      const d    = me[uf]?.anos?.[ano] || {};
+      const nome = UF_NAMES[uf] || uf;
+
+      layer.on('mouseover', function(e) {
+        this.setStyle({ weight:2.5, color:'#c8e63c', fillOpacity:0.95 });
+        L.popup({ closeButton:false, offset:[0,-4], className:'mapa-popup' })
+          .setLatLng(e.latlng)
+          .setContent(`
+            <div style="line-height:1.8">
+              <b style="color:#c8e63c;font-size:10px">${nome} (${uf})</b><br>
+              Total: R$ ${(d.total||0).toFixed(1)} bi<br>
+              LCA: R$ ${(d.lca||0).toFixed(1)} bi &nbsp;|&nbsp; ${(d.shareLCA||0).toFixed(1)}%<br>
+              ${MAPA_DIM[dim].label}: ${MAPA_DIM[dim].fmt(mapaVal(d))}
+            </div>`)
+          .openOn(MAPA.map);
+      });
+
+      layer.on('mouseout', function() {
+        MAPA.layerEstados.resetStyle(this);
+        MAPA.map.closePopup();
+      });
+
+      layer.on('click', function() {
+        MAPA.ufSel  = uf;
+        MAPA.ufNome = nome;
+        mapaSetNivel('municipios');
+      });
+    }
+  }).addTo(MAPA.map);
+
+  // Ajusta view para o Brasil
+  try { MAPA.map.fitBounds(MAPA.layerEstados.getBounds(), {padding:[10,10]}); } catch(e){}
 
   // Breadcrumb
-  document.getElementById('mBread').textContent = '🇧🇷 Brasil → Estados · ' + ano;
+  document.getElementById('mBread').textContent = `🇧🇷 Brasil · Estados · ${ano} · clique num estado para ver municípios`;
   document.getElementById('mBtnBack').style.display = 'none';
-
-  // KPIs nacionais
-  const totBR = vals.reduce((s,v)=>s+v,0);
-  const lcaBR = Object.values(me).reduce((s,d)=>s+(d.anos?.[ano]?.lca||0),0);
-  mapaKpis([
-    {l:'Total Brasil', v:(Object.values(me).reduce((s,d)=>s+(d.anos?.[ano]?.total||0),0)).toFixed(0), u:'R$ bi', c:'var(--acc)'},
-    {l:'LCA Brasil',   v:lcaBR.toFixed(0), u:'R$ bi', c:'var(--acc2)'},
-    {l:'LCA Share',    v:(lcaBR/Object.values(me).reduce((s,d)=>s+(d.anos?.[ano]?.total||0),0)*100||0).toFixed(1), u:'%', c:'var(--acc3)'},
-    {l:'Dim. atual',   v:MAPA_DIM[dim].fmt(totBR), u:'', c:'var(--acc5)'},
-  ]);
-
-  // Desenha SVG
-  const svg = document.getElementById('mSvg');
-  let inner = '';
-  for (const [uf, path] of Object.entries(UF_PATHS)) {
-    const d = me[uf]?.anos?.[ano] || {};
-    const val = mapaGetVal(d, dim);
-    const fill = val > 0 ? mapaColor(val, mn, mx) : '#1a1a1a';
-    const isSel = uf === MAPA.ufSel;
-    const nums = path.match(/[\d.]+/g).map(Number);
-    let xs=[],ys=[]; for(let i=0;i<nums.length;i+=2){xs.push(nums[i]);ys.push(nums[i+1]);}
-    const cx = xs.reduce((a,b)=>a+b)/xs.length;
-    const cy = ys.reduce((a,b)=>a+b)/ys.length;
-    const tipTxt = `${UF_NAMES[uf]} (${uf}) · ${ano}\nTotal: R$${(d.total||0).toFixed(1)}bi · LCA: ${(d.shareLCA||0).toFixed(1)}%`;
-    inner += `<path class="uf-path${isSel?' sel':''}" d="${path}" fill="${fill}"
-      onmouseenter="showMapTip(event,\`${tipTxt}\`)" onmouseleave="hideTip()"
-      onclick="mapaClickUF('${uf}')"/>`;
-    if (val > 0)
-      inner += `<text x="${cx}" y="${cy+3}" font-size="5.5" text-anchor="middle" fill="#0f0f0f99" font-family="monospace" pointer-events="none">${uf}</text>`;
-  }
-  svg.innerHTML = inner;
-  mapaLegenda(mn, mx, dim);
+  document.getElementById('mBtnEst')?.classList.add('active');
+  document.getElementById('mBtnMun')?.classList.remove('active');
 }
 
+// ── MUNICÍPIOS ───────────────────────────────────────────────────────
 async function mapaRenderMunicipios() {
-  const mm = DB.mapa_municipios;
-  const me = DB.mapa_estados;
-  if (!mm) { return; }
+  if (!MAPA.map) return;
 
+  const mm  = DB.mapa_municipios || [];
+  const me  = DB.mapa_estados   || {};
   const uf  = MAPA.ufSel;
   const ano = MAPA.anoSel;
   const dim = MAPA.dimensao;
 
-  // Filtra municípios
-  const muns = uf ? mm.filter(m => m.uf === uf) : mm.slice(0, 400);
+  // Remove camadas anteriores
+  if (MAPA.layerEstados)    { MAPA.map.removeLayer(MAPA.layerEstados); }
+  if (MAPA.layerMunicipios) { MAPA.map.removeLayer(MAPA.layerMunicipios); }
 
-  // Breadcrumb e botão voltar
-  const nomeUF = uf ? (UF_NAMES[uf] || uf) : 'Brasil';
-  document.getElementById('mBread').textContent = `🇧🇷 Brasil → ${nomeUF} · ${ano} · ${muns.length} municípios`;
-  const btnBack = document.getElementById('mBtnBack');
-  if (btnBack) btnBack.style.display = uf ? '' : 'none';
+  // Filtra municípios do estado
+  const muns = uf ? mm.filter(m => m.uf === uf) : mm.slice(0, 500);
 
-  // KPIs do estado
-  const dEst = uf && me?.[uf]?.anos?.[ano] ? me[uf].anos[ano] : {};
-  const totM = muns.reduce((s,m)=>s+m.total,0);
-  mapaKpis([
-    {l: uf ? 'Total '+uf : 'Top municípios', v:(dEst.total||totM).toFixed(0), u:'R$ bi', c:'var(--acc)'},
-    {l:'LCA',       v:(dEst.lca||0).toFixed(1),      u:'R$ bi', c:'var(--acc2)'},
-    {l:'LCA Share', v:(dEst.shareLCA||0).toFixed(1), u:'%',     c:'var(--acc3)'},
-    {l:'Municípios',v:muns.length, u:'com dados', c:'var(--acc5)'},
-  ]);
-
-  // Escala de cor
+  // Escala de tamanho e cor
   const vals = muns.map(m => m[dim] ?? m.total ?? 0).filter(v=>v>0);
   const mn = Math.min(...vals)||0, mx = Math.max(...vals)||1;
+  const maxR = 30000, minR = 3000; // metros (Leaflet usa metros)
 
-  // ViewBox ajustado por UF
-  const vbMap = {
-    RS:'225,408,100,65',PR:'245,348,105,60',SC:'238,382,80,45',
-    SP:'270,330,100,70',RJ:'375,352,65,45',MG:'312,278,120,100',
-    ES:'398,308,48,55',BA:'338,208,118,108',GO:'278,262,90,75',
-    DF:'326,294,22,22',MS:'238,312,95,65',MT:'200,238,108,88',
-    PA:'242,158,105,88',AM:'138,158,125,105',RO:'185,242,72,62',
-    AC:'124,248,48,38',AP:'302,136,44,38',RR:'190,120,60,60',
-    TO:'310,210,62,68',MA:'332,180,58,48',PI:'368,188,48,45',
-    CE:'394,177,58,42',RN:'420,177,36,28',PB:'410,192,44,24',
-    PE:'392,202,60,24',AL:'428,214,28,22',SE:'414,220,32,22',
-  };
-  const vb = uf && vbMap[uf] ? vbMap[uf] : '120,120,360,370';
+  // Grupo de círculos
+  const group = L.featureGroup();
 
-  const svg = document.getElementById('mSvg');
-  svg.setAttribute('viewBox', vb);
-
-  let inner = '';
-  // Fundo do estado se selecionado
-  if (uf && UF_PATHS[uf])
-    inner += `<path d="${UF_PATHS[uf]}" fill="#121a12" stroke="#2a4a2a" stroke-width=".8"/>`;
-
-  // Círculos dos municípios
-  const maxR = uf ? 2.5 : 4, minR = 0.3;
   for (const m of muns) {
     const val = m[dim] ?? m.total ?? 0;
-    if (val <= 0 || !m.lat || !m.lon) continue;
-    const r = minR + ((val-mn)/(mx-mn||1)) * (maxR-minR);
-    const fill = mapaColor(val, mn, mx);
-    const tipTxt = `${m.nome} (${m.uf})\nTotal: R$${m.total.toFixed(2)}bi\nLCA: ${m.shareLCA.toFixed(1)}%\nCusteio: R$${m.custeio.toFixed(2)}bi`;
-    inner += `<circle class="mun-circle" cx="${m.lon}" cy="${m.lat}" r="${r}"
-      fill="${fill}" opacity=".85"
-      onmouseenter="showMapTip(event,\`${tipTxt}\`)" onmouseleave="hideTip()"/>`;
-  }
-  svg.innerHTML = inner;
-  mapaLegenda(mn, mx, dim);
-}
+    if (!val || !m.lat || !m.lon) continue;
 
-function mapaClickUF(uf) {
-  MAPA.ufSel = uf;
-  MAPA.nivel = 'municipios';
+    const r    = minR + ((val-mn)/(mx-mn||1)) * (maxR-minR);
+    const fill = mapaColor(val, mn, mx);
+
+    const circle = L.circle([m.lat, m.lon], {
+      radius:      r,
+      fillColor:   fill,
+      fillOpacity: 0.8,
+      color:       '#0a0f0a',
+      weight:      0.5,
+    });
+
+    circle.bindPopup(`
+      <div style="line-height:1.8">
+        <b style="color:#c8e63c;font-size:10px">${m.nome}</b>
+        <span style="color:#5a5248"> (${m.uf})</span><br>
+        Total: R$ ${m.total.toFixed(2)} bi<br>
+        LCA: R$ ${m.lca.toFixed(2)} bi &nbsp;|&nbsp; ${m.shareLCA.toFixed(1)}%<br>
+        Custeio: R$ ${m.custeio.toFixed(2)} bi<br>
+        Invest.: R$ ${m.invest.toFixed(2)} bi
+      </div>`, { closeButton:true, className:'mapa-popup' });
+
+    circle.on('mouseover', function() { this.openPopup(); });
+    group.addLayer(circle);
+  }
+
+  MAPA.layerMunicipios = group;
+  group.addTo(MAPA.map);
+
+  // Zoom no estado selecionado
+  try {
+    if (group.getLayers().length > 0) {
+      MAPA.map.fitBounds(group.getBounds(), {padding:[20,20], maxZoom:8});
+    }
+  } catch(e) {}
+
+  // Breadcrumb
+  const nome = MAPA.ufNome || uf || 'Brasil';
+  document.getElementById('mBread').textContent =
+    `🇧🇷 Brasil › ${nome} · ${muns.length} municípios com dados · ${ano}`;
+  document.getElementById('mBtnBack').style.display = '';
   document.getElementById('mBtnEst')?.classList.remove('active');
   document.getElementById('mBtnMun')?.classList.add('active');
-  if (document.getElementById('mBtnBack')) document.getElementById('mBtnBack').style.display = '';
-  mapaRender();
 }
 
-function mapaKpis(items) {
+// ── CONTROLES ────────────────────────────────────────────────────────
+function mapaSetNivel(n) {
+  MAPA.nivel = n;
+  if (n === 'estados') { MAPA.ufSel = null; MAPA.ufNome = null; }
+  if (!MAPA.map) { mapaInit(); return; }
+  if (n === 'estados') mapaRenderEstados();
+  else                 mapaRenderMunicipios();
+  mapaUpdateKpis();
+  mapaUpdateSide();
+}
+
+function mapaVoltar() { mapaSetNivel('estados'); }
+
+function mapaSetTab(t) {
+  MAPA.tabMapa = t;
+  ['serie','fontes','ranking'].forEach(x => {
+    const id = 'mt' + x.charAt(0).toUpperCase() + x.slice(1);
+    document.getElementById(id)?.classList.toggle('active', x===t);
+  });
+  mapaUpdateSide();
+}
+
+function mapaRefresh() {
+  if (!MAPA.map) return;
+  if (MAPA.nivel === 'estados') mapaRenderEstados();
+  else                           mapaRenderMunicipios();
+  mapaUpdateKpis();
+  mapaUpdateSide();
+}
+
+// ── KPIs ────────────────────────────────────────────────────────────
+function mapaUpdateKpis() {
   const el = document.getElementById('mKpis');
   if (!el) return;
+  const me  = DB.mapa_estados || {};
+  const ano = MAPA.anoSel;
+  const uf  = MAPA.ufSel;
+  const d   = uf && me[uf]?.anos?.[ano] ? me[uf].anos[ano] : null;
+
+  const totBR = Object.values(me).reduce((s,x)=>s+(x.anos?.[ano]?.total||0),0);
+  const lcaBR = Object.values(me).reduce((s,x)=>s+(x.anos?.[ano]?.lca||0),0);
+
+  const items = uf ? [
+    {l:`Total ${uf}`, v:(d?.total||0).toFixed(1), u:'R$ bi', c:'var(--acc)'},
+    {l:'LCA',         v:(d?.lca||0).toFixed(1),   u:'R$ bi', c:'var(--acc2)'},
+    {l:'LCA Share',   v:(d?.shareLCA||0).toFixed(1),u:'%',   c:'var(--acc3)'},
+    {l:MAPA_DIM[MAPA.dimensao].label, v:MAPA_DIM[MAPA.dimensao].fmt(mapaVal(d)), u:'', c:'var(--acc5)'},
+  ] : [
+    {l:'Total Brasil', v:totBR.toFixed(0), u:'R$ bi', c:'var(--acc)'},
+    {l:'LCA Brasil',   v:lcaBR.toFixed(0), u:'R$ bi', c:'var(--acc2)'},
+    {l:'LCA Share',    v:totBR>0?(lcaBR/totBR*100).toFixed(1):'0', u:'%', c:'var(--acc3)'},
+    {l:'Ano',          v:ano, u:'',  c:'var(--acc5)'},
+  ];
+
   el.innerHTML = items.map(i=>`
     <div class="mapa-kpi" style="border-left:2px solid ${i.c}">
       <div class="mapa-kpi-l">${i.l}</div>
@@ -1308,74 +1435,77 @@ function mapaKpis(items) {
     </div>`).join('');
 }
 
-function mapaLegenda(mn, mx, dim) {
-  const el = document.getElementById('mLeg');
-  if (!el) return;
-  const unit = dim==='shareLCA'?'%':'bi';
-  const steps = [0,.25,.5,.75,1];
-  el.innerHTML = steps.map(t=>{
-    const v = mn+(mx-mn)*t;
-    return `<div style="display:flex;align-items:center;gap:2px">
-      <div style="width:12px;height:12px;border-radius:2px;background:${mapaColor(mn+(mx-mn)*t,mn,mx)}"></div>
-      <span>${v.toFixed(dim==='shareLCA'?1:0)}${unit}</span>
-    </div>`;
-  }).join('');
-}
-
-function showMapTip(e, txt) {
-  const tip = document.getElementById('mapTip');
-  tip.style.display='block';
-  tip.style.left=(e.clientX+14)+'px';
-  tip.style.top=(e.clientY-8)+'px';
-  tip.innerHTML = txt.replace(/\n/g,'<br>');
-}
-function hideTip() { document.getElementById('mapTip').style.display='none'; }
-
+// ── PAINEL LATERAL ───────────────────────────────────────────────────
 function mapaUpdateSide() {
-  const tab = MAPA.tabMapa;
+  const tab  = MAPA.tabMapa;
   const area = document.getElementById('mChartArea');
   if (!area) return;
 
-  if (tab !== 'ranking') {
-    area.innerHTML = '<canvas id="mChart" style="position:absolute;inset:8px"></canvas>';
-    area.style.overflow = 'hidden';
-  } else {
-    area.innerHTML = '';
-    area.style.overflow = 'auto';
-  }
-
   if (MAPA.chartMapa) { MAPA.chartMapa.destroy(); MAPA.chartMapa = null; }
 
-  const me = DB.mapa_estados;
-  const uf = MAPA.ufSel;
+  const me  = DB.mapa_estados || {};
+  const uf  = MAPA.ufSel;
   const ano = MAPA.anoSel;
+
+  if (tab === 'ranking') {
+    // Tabela
+    area.innerHTML = '';
+    area.style.overflow = 'auto';
+    let rows;
+    if (MAPA.nivel === 'municipios' && DB.mapa_municipios) {
+      rows = (uf ? DB.mapa_municipios.filter(m=>m.uf===uf) : DB.mapa_municipios)
+        .sort((a,b)=>b.total-a.total).slice(0,40);
+    } else {
+      rows = Object.entries(me)
+        .map(([u,d])=>({nome:UF_NAMES[u]||u, uf:u,
+          total:d.anos?.[ano]?.total||0,
+          lca:d.anos?.[ano]?.lca||0,
+          shareLCA:d.anos?.[ano]?.shareLCA||0}))
+        .sort((a,b)=>b.total-a.total);
+    }
+    const mx2 = rows[0]?.total||1;
+    let html = `<table class="tbl" style="font-size:9px">
+      <thead><tr><th>#</th><th>Nome</th><th>R$ bi</th><th>LCA%</th></tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      const w = Math.max(2, (r.total/mx2)*55);
+      const nome = r.nome || r.municipio || r.uf || '';
+      html += `<tr>
+        <td class="num" style="color:var(--mut);width:22px">${i+1}</td>
+        <td>${nome}${r.uf&&r.nome?` <span style="color:var(--mut)">${r.uf}</span>`:''}</td>
+        <td class="num"><div class="bar-cell">
+          <div class="mini-bar" style="width:${w}px;background:#c8e63c"></div>
+          ${r.total.toFixed(1)}</div></td>
+        <td class="num">${(r.shareLCA||0).toFixed(1)}%</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+    return;
+  }
+
+  // Gráfico
+  area.innerHTML = '<canvas id="mChart" style="position:absolute;inset:8px"></canvas>';
+  area.style.overflow = 'hidden';
+  const ctx = document.getElementById('mChart');
+  if (!ctx) return;
 
   if (tab === 'serie') {
     const anos = Object.keys(DB.mapa_brasil||{}).filter(a=>a>='2013').sort();
-    let data;
-    if (uf && me?.[uf]) {
-      data = anos.map(a=>me[uf].anos?.[a]?.total??0);
-    } else {
-      data = anos.map(a=>DB.mapa_brasil?.[a]?.total??0);
-    }
-    const ctx = document.getElementById('mChart');
-    if (!ctx) return;
+    const src  = uf && me[uf] ? me[uf] : null;
+    const total = src ? anos.map(a=>src.anos?.[a]?.total??0) : anos.map(a=>DB.mapa_brasil?.[a]?.total??0);
+    const lca   = src ? anos.map(a=>src.anos?.[a]?.lca??0)   : anos.map(a=>DB.mapa_brasil?.[a]?.lca??0);
     MAPA.chartMapa = new Chart(ctx, {
-      type:'line',
-      data:{labels:anos,datasets:[{
-        label:'Total R$ bi',
-        data,
-        borderColor:'#c8e63c',backgroundColor:'#c8e63c18',
-        borderWidth:2.5,pointRadius:3,fill:true,tension:.3,
-      },{
-        label:'LCA R$ bi',
-        data: uf && me?.[uf] ? anos.map(a=>me[uf].anos?.[a]?.lca??0) : anos.map(a=>DB.mapa_brasil?.[a]?.lca??0),
-        borderColor:'#e8a020',backgroundColor:'transparent',
-        borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[4,3],
-      }]},
-      options:{...gopts,
-        plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:6,font:{size:8},boxWidth:12,boxHeight:2,usePointStyle:true,pointStyle:'line'}},
-                 tooltip:{callbacks:{label:c=>` ${c.dataset.label}: R$${(+c.raw).toFixed(1)}bi`}}},
+      type: 'line',
+      data: { labels: anos, datasets: [
+        { label:'Total', data:total, borderColor:'#c8e63c', backgroundColor:'#c8e63c15',
+          borderWidth:2.5, pointRadius:3, fill:true, tension:.3 },
+        { label:'LCA',   data:lca,   borderColor:'#e8a020', backgroundColor:'transparent',
+          borderWidth:1.5, pointRadius:2, fill:false, tension:.3, borderDash:[4,3] },
+      ]},
+      options: { ...gopts,
+        plugins:{ legend:{display:true,position:'bottom',
+          labels:{color:'#808080',padding:6,font:{size:8},boxWidth:16,boxHeight:2,usePointStyle:true,pointStyle:'line'}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: R$${(+c.raw).toFixed(1)}bi`}}},
         scales:{
           x:{grid:{color:'#1e1e1e'},ticks:{color:'#5a5248',font:{size:8}}},
           y:{grid:{color:'#1e1e1e'},ticks:{callback:v=>`${v.toFixed(0)}bi`,color:'#5a5248',font:{size:8}}},
@@ -1384,44 +1514,30 @@ function mapaUpdateSide() {
     });
 
   } else if (tab === 'fontes') {
-    const fontes = uf && me?.[uf]?.anos?.[ano]?.fontes
+    const fontes = (uf && me[uf]?.anos?.[ano]?.fontes)
       ? me[uf].anos[ano].fontes
       : DB.mapa_brasil?.[ano]?.fontes || {};
     const labels = Object.keys(fontes);
     const values = Object.values(fontes);
-    const cmap = {'LCA Livre':'#c8e63c','LCA Controlada':'#a0c020','CRA':'#60d0a0','BNDES/FAT':'#4db8a0','Fundos Constitucionais':'#e8a020','Poupança Rural':'#8866cc','Obrigatórios':'#e05050','Fundos Setoriais':'#5090e0','Equalização/Tesouro':'#d060a0','Outros':'#606060'};
-    const ctx = document.getElementById('mChart');
-    if (!ctx) return;
-    MAPA.chartMapa = new Chart(ctx,{
-      type:'doughnut',
-      data:{labels,datasets:[{data:values,backgroundColor:labels.map(l=>cmap[l]||'#808080'),borderWidth:2,borderColor:'#0f0f0f',hoverOffset:5}]},
-      options:{...gopts,cutout:'55%',
-        plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:5,font:{size:7.5},boxWidth:8,boxHeight:8}},
-                 tooltip:{callbacks:{label:c=>`${c.label}: R$${(+c.raw).toFixed(2)}bi`}}}
+    const cmap = {
+      'LCA Livre':'#c8e63c','LCA Controlada':'#a0c020','CRA':'#60d0a0',
+      'BNDES/FAT':'#4db8a0','Fundos Constitucionais':'#e8a020',
+      'Poupança Rural':'#8866cc','Obrigatórios':'#e05050',
+      'Fundos Setoriais':'#5090e0','Equalização/Tesouro':'#d060a0','Outros':'#606060',
+    };
+    MAPA.chartMapa = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets:[{
+        data: values,
+        backgroundColor: labels.map(l=>cmap[l]||'#808080'),
+        borderWidth:2, borderColor:'#0f0f0f', hoverOffset:5,
+      }]},
+      options: { ...gopts, cutout:'55%',
+        plugins:{ legend:{display:true,position:'bottom',
+          labels:{color:'#808080',padding:5,font:{size:7.5},boxWidth:8,boxHeight:8}},
+          tooltip:{callbacks:{label:c=>`${c.label}: R$${(+c.raw).toFixed(2)}bi`}}}
       }
     });
-
-  } else if (tab === 'ranking') {
-    let rows;
-    if (MAPA.nivel==='municipios' && DB.mapa_municipios) {
-      rows = (uf ? DB.mapa_municipios.filter(m=>m.uf===uf) : DB.mapa_municipios)
-             .sort((a,b)=>b.total-a.total).slice(0,40);
-    } else if (me) {
-      rows = Object.entries(me)
-        .map(([u,d])=>({nome:UF_NAMES[u]||u, uf:u, total:d.anos?.[ano]?.total||0, lca:d.anos?.[ano]?.lca||0, shareLCA:d.anos?.[ano]?.shareLCA||0}))
-        .sort((a,b)=>b.total-a.total);
-    } else { rows = []; }
-    const mx2 = rows[0]?.total||1;
-    let html=`<table class="tbl" style="font-size:9px"><thead><tr><th>#</th><th>Nome</th><th>R$ bi</th><th>LCA%</th></tr></thead><tbody>`;
-    rows.forEach((r,i)=>{
-      const w = Math.max(2,(r.total/mx2)*60);
-      html+=`<tr><td class="num" style="color:var(--mut);width:24px">${i+1}</td>
-        <td>${r.nome||r.municipio} <span style="color:var(--mut);font-size:8px">${r.uf||''}</span></td>
-        <td class="num"><div class="bar-cell"><div class="mini-bar" style="width:${w}px;background:#c8e63c"></div>${r.total.toFixed(1)}</div></td>
-        <td class="num">${(r.shareLCA||0).toFixed(1)}%</td></tr>`;
-    });
-    html+='</tbody></table>';
-    area.innerHTML=html;
   }
 }
 

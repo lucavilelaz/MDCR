@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crédito Rural · MDCR · BCB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0f0f0f;
+  --s1:       #161616;
+  --s2:       #1e1e1e;
+  --s3:       #252525;
+  --bor:      #2a2a2a;
+  --bor2:     #363636;
+  --txt:      #e8e4dc;
+  --mid:      #a09890;
+  --mut:      #5a5248;
+  --acc:      #c8e63c;      /* lima */
+  --acc2:     #e8a020;      /* âmbar */
+  --acc3:     #4db8a0;      /* teal */
+  --acc4:     #e05050;      /* vermelho */
+  --acc5:     #8866cc;      /* lilás */
+  --forest:   #2d7a4a;
+  --mono:     'Syne Mono', monospace;
+  --sans:     'Syne', sans-serif;
+  --body:     'Inter', sans-serif;
+  /* paleta de fontes */
+  --c-lca:    #c8e63c;
+  --c-bndes:  #4db8a0;
+  --c-poup:   #8866cc;
+  --c-fund:   #e8a020;
+  --c-obr:    #e05050;
+  --c-set:    #5090e0;
+  --c-tesouro:#d060a0;
+  --c-cra:    #60d0a0;
+  --c-outros: #707070;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.hdr{
+  display:flex;align-items:stretch;height:52px;
+  background:var(--s1);border-bottom:1px solid var(--bor);
+  flex-shrink:0;position:sticky;top:0;z-index:100;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 20px;border-right:1px solid var(--bor);
+  font-family:var(--sans);
+}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.brand-text{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:.02em}
+.brand-sub{font-family:var(--mono);font-size:8px;color:var(--mut);letter-spacing:.12em}
+
+.nav{display:flex;align-items:stretch;overflow-x:auto;flex:1;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-item{
+  display:flex;align-items:center;padding:0 16px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mut);cursor:pointer;border-right:1px solid var(--bor);
+  white-space:nowrap;transition:all .15s;position:relative;
+}
+.nav-item:hover{color:var(--txt);background:var(--s2)}
+.nav-item.active{color:var(--acc);background:var(--s2)}
+.nav-item.active::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--acc)
+}
+
+.hdr-right{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px;border-left:1px solid var(--bor);
+  font-family:var(--mono);font-size:9px;color:var(--mut);
+  flex-shrink:0;
+}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--acc3);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── LAYOUT ── */
+.body{display:flex;flex:1;overflow:hidden;height:calc(100vh - 52px)}
+.side{
+  width:220px;flex-shrink:0;
+  background:var(--s1);border-right:1px solid var(--bor);
+  overflow-y:auto;display:flex;flex-direction:column;
+  scrollbar-width:thin;scrollbar-color:var(--bor) transparent;
+}
+.main{flex:1;overflow:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--bor) transparent}
+
+/* ── SIDEBAR ── */
+.side-sec{padding:16px 14px 12px;border-bottom:1px solid var(--bor)}
+.side-label{font-family:var(--mono);font-size:7.5px;letter-spacing:.18em;color:var(--mut);text-transform:uppercase;margin-bottom:10px}
+
+/* Period slider */
+.period-wrap{display:flex;flex-direction:column;gap:8px}
+.period-range{display:flex;justify-content:space-between;align-items:center}
+.period-val{font-family:var(--mono);font-size:11px;color:var(--acc);font-weight:600}
+.slider-track{position:relative;height:24px;display:flex;align-items:center}
+.track-bg{position:absolute;left:0;right:0;height:2px;background:var(--bor2);border-radius:1px}
+.track-fill{position:absolute;height:2px;background:var(--acc);border-radius:1px}
+.slider{
+  position:absolute;width:100%;-webkit-appearance:none;appearance:none;
+  background:transparent;height:24px;pointer-events:none;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--acc);pointer-events:all;cursor:pointer;
+  border:2px solid var(--bg);transition:transform .1s;
+}
+.slider::-webkit-slider-thumb:hover{transform:scale(1.3)}
+.slider::-moz-range-thumb{
+  width:12px;height:12px;border-radius:50%;background:var(--acc);
+  pointer-events:all;cursor:pointer;border:2px solid var(--bg);
+}
+#sEnd{z-index:3}#sStart{z-index:2}
+
+/* KPIs */
+.kpi-list{display:flex;flex-direction:column;gap:3px}
+.kpi{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;background:var(--s2);border-radius:3px;
+  border-left:2px solid var(--kc, var(--acc));
+}
+.kpi-label{font-family:var(--mono);font-size:7.5px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.kpi-val{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--txt);line-height:1}
+.kpi-unit{font-family:var(--mono);font-size:8px;color:var(--mut)}
+
+/* Fonte chips */
+.fonte-chips{display:flex;flex-direction:column;gap:2px}
+.chip{
+  display:flex;align-items:center;gap:7px;padding:5px 8px;
+  border-radius:3px;cursor:pointer;transition:all .12s;
+  border:1px solid var(--bor);
+}
+.chip.off{opacity:.3}
+.chip:hover{opacity:.8}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chip-name{font-size:10px;color:var(--mid);flex:1;font-family:var(--body)}
+.chip-val{font-family:var(--mono);font-size:8px;color:var(--mut)}
+
+/* ── PANELS ── */
+.panels{display:grid;gap:1px;padding:1px;background:var(--bor);flex:1}
+.panel{background:var(--s1);display:flex;flex-direction:column;overflow:hidden}
+.ph{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 8px;border-bottom:1px solid var(--bor);flex-shrink:0;
+}
+.ph-title{font-family:var(--mono);font-size:8.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--mid)}
+.ph-tag{
+  font-family:var(--mono);font-size:7.5px;color:var(--mut);
+  background:var(--s2);padding:2px 7px;border-radius:2px;border:1px solid var(--bor);
+}
+.cw{flex:1;padding:10px;position:relative;min-height:180px}
+.cw canvas{position:absolute;inset:10px}
+
+/* Table inside panel */
+.tbl-wrap{overflow:auto;flex:1;padding:0}
+.tbl{width:100%;border-collapse:collapse;font-size:10px}
+.tbl th{
+  font-family:var(--mono);font-size:7.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--mut);padding:6px 10px;text-align:left;
+  border-bottom:1px solid var(--bor);position:sticky;top:0;background:var(--s1);
+}
+.tbl td{padding:5px 10px;border-bottom:1px solid var(--bor);color:var(--mid);vertical-align:middle}
+.tbl tr:hover td{background:var(--s2)}
+.tbl .num{font-family:var(--mono);font-size:9px;text-align:right;color:var(--txt)}
+.bar-cell{display:flex;align-items:center;gap:5px}
+.mini-bar{height:4px;border-radius:2px;background:var(--acc);flex-shrink:0}
+
+/* Map */
+.map-svg{width:100%;height:100%}
+.uf-path{cursor:pointer;stroke:#0f0f0f;stroke-width:.8;transition:opacity .1s}
+.uf-path:hover{opacity:.7;stroke-width:2}
+.map-tip{
+  position:fixed;background:var(--s3);border:1px solid var(--bor2);
+  color:var(--txt);padding:6px 10px;border-radius:3px;
+  font-family:var(--mono);font-size:9px;pointer-events:none;z-index:200;
+  display:none;line-height:1.6;
+}
+
+/* Spinner */
+.spinner{display:flex;align-items:center;justify-content:center;height:100%;gap:8px;font-family:var(--mono);font-size:9px;color:var(--mut)}
+.spin{width:14px;height:14px;border:2px solid var(--bor);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Fonte legend */
+.fonte-legend{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--bor);flex-shrink:0}
+.leg{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8px;color:var(--mut)}
+.leg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Status bar */
+.statusbar{
+  padding:5px 16px;background:var(--s1);border-top:1px solid var(--bor);
+  font-family:var(--mono);font-size:8px;color:var(--mut);
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
+}
+.statusbar a{color:var(--acc3);text-decoration:none}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-text">Crédito Rural</div>
+      <div class="brand-sub">BCB · SICOR · MDCR v2</div>
+    </div>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="hdr-right">
+    <div class="status-dot"></div>
+    <span id="statusLabel">Carregando…</span>
+  </div>
+</header>
+
+<div class="map-tip" id="mapTip"></div>
+
+<div class="body">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="side-sec">
+      <div class="side-label">Período</div>
+      <div class="period-wrap">
+        <div class="period-range">
+          <span class="period-val" id="pStart">2013</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--mut)">→</span>
+          <span class="period-val" id="pEnd">2026</span>
+        </div>
+        <div class="slider-track">
+          <div class="track-bg"></div>
+          <div class="track-fill" id="trackFill"></div>
+          <input type="range" class="slider" id="sStart" min="0" max="13" value="0">
+          <input type="range" class="slider" id="sEnd"   min="0" max="13" value="13">
+        </div>
+      </div>
+    </div>
+    <div class="side-sec">
+      <div class="side-label">Indicadores</div>
+      <div class="kpi-list" id="kpiList"></div>
+    </div>
+    <div class="side-sec" style="flex:1">
+      <div class="side-label">Fontes de recursos</div>
+      <div class="fonte-chips" id="fonteChips"></div>
+    </div>
+    <div class="side-sec" style="font-family:var(--mono);font-size:8px;color:var(--mut);line-height:1.7">
+      <div class="side-label">Sobre</div>
+      BCB/SICOR · MDCR v2<br>
+      ODbL · dadosabertos.bcb.gov.br<br>
+      <a href="https://dadosabertos.bcb.gov.br/dataset/matrizdadoscreditorural" target="_blank" style="color:var(--acc3)">↗ Dados abertos BCB</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+    <div class="panels" id="panels" style="grid-template-columns:1fr;grid-template-rows:1fr">
+      <div class="panel"><div class="spinner"><div class="spin"></div>Carregando dados…</div></div>
+    </div>
+    <div class="statusbar">
+      <span id="stLeft">BCB · SICOR · MDCR v2</span>
+      <span id="stRight"></span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const ANOS = ['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026'];
+const DATA_PATH = './dados_processados/';
+
+const FONTES_CONFIG = [
+  {k:'LCA Livre',            c:'#c8e63c'},
+  {k:'LCA Controlada',       c:'#a0c020'},
+  {k:'CRA',                  c:'#60d0a0'},
+  {k:'BNDES/FAT',            c:'#4db8a0'},
+  {k:'Fundos Constitucionais',c:'#e8a020'},
+  {k:'Poupança Rural',       c:'#8866cc'},
+  {k:'Obrigatórios',         c:'#e05050'},
+  {k:'Fundos Setoriais',     c:'#5090e0'},
+  {k:'Equalização/Tesouro',  c:'#d060a0'},
+  {k:'Outros',               c:'#606060'},
+];
+const FC = Object.fromEntries(FONTES_CONFIG.map(f=>[f.k,f.c]));
+
+const ABAS = [
+  {id:'geral',    label:'Visão Geral'},
+  {id:'fontes',   label:'Fontes'},
+  {id:'bancos',   label:'Bancos'},
+  {id:'modalidade',label:'Modalidade'},
+  {id:'produtos', label:'Produtos'},
+  {id:'abc',      label:'ABC+'},
+  {id:'mapa',     label:'Mapa'},
+  {id:'porte',    label:'Porte'},
+  {id:'genero',   label:'Gênero'},
+  {id:'concentracao',label:'Concentração'},
+];
+
+// ═══════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════
+let DB = {};
+let abaAtual = 'geral';
+let iStart = 0, iEnd = ANOS.length - 1;
+let fonteAtivas = new Set(FONTES_CONFIG.map(f=>f.k));
+const charts = {};
+
+// ═══════════════════════════════════════════════
+// CARREGAMENTO
+// ═══════════════════════════════════════════════
+async function loadJSON(nome) {
+  if (DB[nome]) return DB[nome];
+  try {
+    const r = await fetch(DATA_PATH + nome + '.json');
+    if (!r.ok) throw new Error(r.status);
+    DB[nome] = await r.json();
+    return DB[nome];
+  } catch(e) {
+    console.warn(`Falha ao carregar ${nome}:`, e);
+    return null;
+  }
+}
+
+async function loadAll() {
+  const nomes = ['fonte_recursos','fonte_if','invest_regiao','custeio_regiao',
+                 'comercializacao','prog_subprograma','prog_sub_uf','genero',
+                 'segmento_if','tipo_pessoa','seg_if_uf','faixa_valores',
+                 'faixa_uf','regiao_uf','municipios','invest_municipio','custeio_municipio'];
+  let ok = 0;
+  for (const n of nomes) {
+    await loadJSON(n);
+    ok++;
+    document.getElementById('statusLabel').textContent = `${ok}/${nomes.length} arquivos`;
+  }
+  document.getElementById('statusLabel').textContent = 'Pronto';
+}
+
+// ═══════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════
+function anosAtivos() { return ANOS.slice(iStart, iEnd + 1); }
+
+function filtrar(rows, campoAno) {
+  const a = anosAtivos();
+  return rows.filter(r => a.includes(String(r[campoAno] || r.ano || r.AnoEmissao)));
+}
+
+function agrupar(rows, campos, campoVal) {
+  const acc = {};
+  for (const r of rows) {
+    const k = campos.map(c => r[c] || r[c.toLowerCase()] || '').join('|');
+    acc[k] = (acc[k] || 0) + (parseFloat(r[campoVal]) || 0);
+  }
+  return acc;
+}
+
+function serieAnoPorGrupo(rows, campoGrupo, campoVal, campoAno='AnoEmissao') {
+  const anos = anosAtivos();
+  const grupos = [...new Set(rows.map(r => r[campoGrupo]))].filter(Boolean);
+  const out = {};
+  for (const g of grupos) {
+    out[g] = anos.map(a => {
+      const matched = rows.filter(r => String(r[campoAno]||r.ano) === a && r[campoGrupo] === g);
+      return matched.reduce((s, r) => s + (parseFloat(r[campoVal]) || 0), 0);
+    });
+  }
+  return { anos, grupos, out };
+}
+
+function somaPeriodo(rows, campoVal, campoAno='AnoEmissao') {
+  return filtrar(rows, campoAno).reduce((s,r) => s + (parseFloat(r[campoVal])||0), 0);
+}
+
+function kill(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+const gopts = { responsive:true, maintainAspectRatio:false };
+const gridC = '#1e1e1e';
+const tickC = '#5a5248';
+Chart.defaults.color = '#5a5248';
+Chart.defaults.font.family = "'Syne Mono', monospace";
+Chart.defaults.font.size = 9;
+Chart.defaults.plugins.legend.display = false;
+
+function barStacked(id, labels, datasets) {
+  kill(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{labels, datasets},
+    options:{...gopts,
+      interaction:{mode:'index'},
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:10,font:{size:8},boxWidth:8,boxHeight:8}},
+               tooltip:{callbacks:{label:c=>` ${c.dataset.label}: R$${(+c.raw).toFixed(1)}bi`}}},
+      scales:{
+        x:{stacked:true,grid:{color:gridC},ticks:{color:tickC,font:{size:8}}},
+        y:{stacked:true,grid:{color:gridC},ticks:{callback:v=>`${v.toFixed(0)}bi`,color:tickC,font:{size:8}}}
+      }
+    }
+  });
+}
+
+function lineMulti(id, labels, datasets) {
+  kill(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type:'line',
+    data:{labels, datasets},
+    options:{...gopts,
+      interaction:{mode:'index'},
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:8,font:{size:8},boxWidth:16,boxHeight:2,usePointStyle:true,pointStyle:'line'}},
+               tooltip:{callbacks:{label:c=>` ${c.dataset.label}: R$${(+c.raw).toFixed(2)}bi`}}},
+      scales:{
+        x:{grid:{color:gridC},ticks:{color:tickC,font:{size:8}}},
+        y:{grid:{color:gridC},ticks:{callback:v=>`${v.toFixed(0)}bi`,color:tickC,font:{size:8}}}
+      }
+    }
+  });
+}
+
+function barH(id, labels, data, colors) {
+  kill(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:2}]},
+    options:{...gopts,indexAxis:'y',
+      plugins:{tooltip:{callbacks:{label:c=>` R$${(+c.raw).toFixed(1)}bi`}}},
+      scales:{
+        x:{grid:{color:gridC},ticks:{callback:v=>`${v.toFixed(0)}bi`,color:tickC,font:{size:8}}},
+        y:{grid:{display:false},ticks:{color:'#a09890',font:{size:8}}}
+      }
+    }
+  });
+}
+
+function barV(id, labels, data, colors) {
+  kill(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:3,borderSkipped:false}]},
+    options:{...gopts,
+      plugins:{tooltip:{callbacks:{label:c=>` R$${(+c.raw).toFixed(2)}bi`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#a09890',font:{size:8}}},
+        y:{grid:{color:gridC},ticks:{callback:v=>`${v.toFixed(0)}bi`,color:tickC,font:{size:8}}}
+      }
+    }
+  });
+}
+
+function donut(id, labels, data, colors) {
+  kill(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#0f0f0f',hoverOffset:6}]},
+    options:{...gopts,cutout:'58%',
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#808080',padding:8,font:{size:8},boxWidth:8,boxHeight:8}},
+               tooltip:{callbacks:{label:c=>`${c.label}: R$${(+c.raw).toFixed(1)}bi`}}}
+    }
+  });
+}
+
+function makePanel(id, title, tag, extra='') {
+  return `<div class="panel ${extra}">
+    <div class="ph"><span class="ph-title">${title}</span><span class="ph-tag">${tag}</span></div>
+    <div class="cw"><canvas id="c${id}"></canvas></div>
+  </div>`;
+}
+
+function makeTablePanel(id, title, tag, extra='') {
+  return `<div class="panel ${extra}">
+    <div class="ph"><span class="ph-title">${title}</span><span class="ph-tag">${tag}</span></div>
+    <div class="tbl-wrap" id="${id}"></div>
+  </div>`;
+}
+
+function tabelaRanking(containerId, rows, cols, maxBar) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const max = maxBar || Math.max(...rows.map(r => r._val || 0));
+  let html = `<table class="tbl"><thead><tr>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr></thead><tbody>`;
+  for (const r of rows.slice(0,50)) {
+    html += '<tr>';
+    for (const c of cols) {
+      const v = r[c.key];
+      if (c.bar) {
+        const w = Math.max(2, (v||0)/max*80);
+        html += `<td class="num"><div class="bar-cell"><div class="mini-bar" style="width:${w}px;background:${c.color||'var(--acc)'}"></div>${typeof v==='number'?v.toFixed(2):v}</div></td>`;
+      } else if (c.num) {
+        html += `<td class="num">${typeof v==='number'?v.toFixed(c.dec||2):v}</td>`;
+      } else {
+        html += `<td>${v||'—'}</td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR: KPIs + CHIPS
+// ═══════════════════════════════════════════════
+function updateSidebar() {
+  const anos = anosAtivos();
+  const fr = DB.fonte_recursos;
+  const fi = DB.fonte_if;
+
+  let totCusteio=0, totInvest=0, totComerc=0, totLCA=0, totTotal=0;
+
+  if (fr?.serie_anual) {
+    const rows = fr.serie_anual.filter(r => anos.includes(String(r.AnoEmissao)));
+    for (const r of rows) {
+      totCusteio += r.VlCusteio||0;
+      totInvest  += r.VlInvestimento||0;
+      totComerc  += r.VlComercializacao||0;
+      if (r.grupoFonte?.includes('LCA')) totLCA += (r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0);
+    }
+    totTotal = totCusteio + totInvest + totComerc;
+  }
+
+  const kpis = [
+    {label:'Total período', val: totTotal.toFixed(0), unit:'R$ bi', c:'var(--acc)'},
+    {label:'Custeio',       val: totCusteio.toFixed(0), unit:'R$ bi', c:'var(--acc2)'},
+    {label:'Investimento',  val: totInvest.toFixed(0),  unit:'R$ bi', c:'var(--acc3)'},
+    {label:'LCA Livre',     val: totLCA.toFixed(0),     unit:'R$ bi', c:'var(--c-lca)'},
+    {label:'LCA % total',   val: totTotal>0?(totLCA/totTotal*100).toFixed(1):'—', unit:'%', c:'var(--acc5)'},
+  ];
+  document.getElementById('kpiList').innerHTML = kpis.map(k=>
+    `<div class="kpi" style="--kc:${k.c}">
+       <div><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val} <span class="kpi-unit">${k.unit}</span></div></div>
+     </div>`).join('');
+
+  // Chips
+  const chips = document.getElementById('fonteChips');
+  chips.innerHTML = '';
+  for (const {k,c} of FONTES_CONFIG) {
+    let vol = 0;
+    if (fr?.serie_anual) {
+      vol = fr.serie_anual.filter(r=>anos.includes(String(r.AnoEmissao))&&r.grupoFonte===k)
+                          .reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0);
+    }
+    const on = fonteAtivas.has(k);
+    const div = document.createElement('div');
+    div.className = 'chip' + (on?'':' off');
+    div.style.borderColor = on ? c+'50' : 'var(--bor)';
+    div.innerHTML = `<div class="chip-dot" style="background:${c}"></div>
+      <span class="chip-name">${k}</span>
+      <span class="chip-val">${vol>0?vol.toFixed(0)+'bi':''}</span>`;
+    div.onclick = () => { fonteAtivas.has(k)?fonteAtivas.delete(k):fonteAtivas.add(k); updateSidebar(); render(); };
+    chips.appendChild(div);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PERIOD SLIDER
+// ═══════════════════════════════════════════════
+function initSliders() {
+  const s1 = document.getElementById('sStart');
+  const s2 = document.getElementById('sEnd');
+  function upd() {
+    iStart = Math.min(+s1.value, +s2.value);
+    iEnd   = Math.max(+s1.value, +s2.value);
+    s1.value = iStart; s2.value = iEnd;
+    document.getElementById('pStart').textContent = ANOS[iStart];
+    document.getElementById('pEnd').textContent   = ANOS[iEnd];
+    const pct1 = iStart/(ANOS.length-1)*100;
+    const pct2 = iEnd/(ANOS.length-1)*100;
+    document.getElementById('trackFill').style.left  = pct1+'%';
+    document.getElementById('trackFill').style.width = (pct2-pct1)+'%';
+    updateSidebar();
+    render();
+  }
+  s1.addEventListener('input', upd);
+  s2.addEventListener('input', upd);
+  upd();
+}
+
+// ═══════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════
+function initNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = ABAS.map(a=>
+    `<div class="nav-item${a.id===abaAtual?' active':''}" data-id="${a.id}" onclick="setAba('${a.id}')">${a.label}</div>`
+  ).join('');
+}
+
+function setAba(id) {
+  abaAtual = id;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// BRAZIL MAP
+// ═══════════════════════════════════════════════
+const UF_PATHS = {
+  AC:"M135,255 L155,255 L165,268 L155,278 L140,278 L130,268Z",
+  AM:"M155,180 L215,170 L245,185 L260,210 L250,240 L215,255 L185,255 L165,268 L155,255 L145,235 L145,210Z",
+  RR:"M195,130 L235,125 L245,155 L235,175 L215,170 L200,160Z",
+  PA:"M260,170 L310,165 L330,180 L340,205 L325,225 L300,235 L270,240 L250,240 L260,210 L245,185Z",
+  AP:"M310,145 L335,145 L340,165 L320,168 L310,165Z",
+  TO:"M330,220 L355,215 L365,235 L360,260 L345,270 L325,265 L315,248 L320,230Z",
+  MA:"M340,190 L375,185 L385,205 L375,220 L355,215 L340,205Z",
+  PI:"M375,195 L400,192 L410,210 L400,225 L385,225 L375,220Z",
+  CE:"M400,185 L425,182 L435,198 L425,210 L410,210 L400,192Z",
+  RN:"M425,182 L448,183 L450,196 L435,198Z",
+  PB:"M415,198 L448,196 L447,207 L432,210 L415,207Z",
+  PE:"M398,208 L447,207 L447,220 L420,222 L398,218Z",
+  AL:"M435,218 L450,218 L452,228 L437,230Z",
+  SE:"M420,226 L437,224 L440,234 L425,236Z",
+  BA:"M360,225 L410,222 L440,238 L445,268 L430,295 L405,308 L378,305 L358,290 L345,268 L348,248Z",
+  MG:"M340,295 L378,303 L410,310 L420,335 L408,358 L388,368 L358,368 L335,355 L320,335 L325,310Z",
+  ES:"M410,318 L432,315 L438,338 L425,352 L410,355 L405,338Z",
+  RJ:"M388,368 L415,358 L428,372 L418,385 L395,382 L383,373Z",
+  SP:"M295,340 L335,335 L360,358 L360,380 L338,392 L308,390 L285,375 L280,355Z",
+  PR:"M265,358 L300,352 L335,365 L338,388 L315,400 L282,400 L258,385 L258,368Z",
+  SC:"M255,390 L285,390 L310,400 L308,415 L285,420 L258,415 L250,402Z",
+  RS:"M248,415 L285,415 L312,418 L315,445 L300,462 L270,465 L248,450 L238,430Z",
+  MS:"M255,325 L295,318 L322,330 L325,360 L305,368 L275,365 L250,350 L248,335Z",
+  MT:"M218,255 L270,248 L300,265 L305,300 L290,315 L255,322 L220,312 L208,288Z",
+  GO:"M300,280 L335,272 L355,290 L352,318 L330,330 L305,325 L288,310 L292,292Z",
+  DF:"M332,300 L342,300 L342,310 L332,310Z",
+  RO:"M200,258 L235,252 L250,268 L245,290 L225,298 L200,290 L190,275Z",
+};
+const UF_NAMES = {
+  AC:"Acre",AM:"Amazonas",RR:"Roraima",PA:"Pará",AP:"Amapá",TO:"Tocantins",
+  MA:"Maranhão",PI:"Piauí",CE:"Ceará",RN:"Rio Grande do Norte",PB:"Paraíba",
+  PE:"Pernambuco",AL:"Alagoas",SE:"Sergipe",BA:"Bahia",MG:"Minas Gerais",
+  ES:"Espírito Santo",RJ:"Rio de Janeiro",SP:"São Paulo",PR:"Paraná",
+  SC:"Santa Catarina",RS:"Rio Grande do Sul",MS:"Mato Grosso do Sul",
+  MT:"Mato Grosso",GO:"Goiás",DF:"Distrito Federal",RO:"Rondônia"
+};
+
+function centroid(path){
+  const ns=path.match(/[\d.]+/g).map(Number);
+  let xs=[],ys=[];
+  for(let i=0;i<ns.length;i+=2){xs.push(ns[i]);ys.push(ns[i+1]);}
+  return [xs.reduce((a,b)=>a+b)/xs.length, ys.reduce((a,b)=>a+b)/ys.length];
+}
+
+function lerp3(t,from,to){
+  return [
+    Math.round(from[0]+(to[0]-from[0])*t),
+    Math.round(from[1]+(to[1]-from[1])*t),
+    Math.round(from[2]+(to[2]-from[2])*t),
+  ];
+}
+
+function renderMap(containerId, ufData) {
+  const vals = Object.values(ufData).filter(v=>v>0);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const tip = document.getElementById('mapTip');
+  let svg = `<svg viewBox="120 120 360 370" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">`;
+  for (const [uf, path] of Object.entries(UF_PATHS)) {
+    const val = ufData[uf] || 0;
+    let fill = '#1e1e1e';
+    if (val > 0 && mx > mn) {
+      const t = Math.pow((val-mn)/(mx-mn), 0.5);
+      const from=[30,50,30], to=[180,230,60];
+      const [r,g,b] = lerp3(t,from,to);
+      fill = `rgb(${r},${g},${b})`;
+    }
+    const [cx,cy] = centroid(path);
+    const label = uf==='DF'?'':
+      `<text x="${cx}" y="${cy+3}" font-size="6" text-anchor="middle" fill="#0f0f0f88" font-family="monospace" pointer-events="none">${uf}</text>`;
+    svg += `<path class="uf-path" d="${path}" fill="${fill}"
+              data-uf="${uf}" data-val="${val.toFixed(2)}"
+              onmouseenter="showTip(event,'${uf}',${val.toFixed(2)})"
+              onmouseleave="hideTip()"/>
+            ${label}`;
+  }
+  svg += '</svg>';
+  document.getElementById(containerId).innerHTML = svg;
+}
+
+function showTip(e, uf, val) {
+  const tip = document.getElementById('mapTip');
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX+14)+'px';
+  tip.style.top  = (e.clientY-8)+'px';
+  tip.innerHTML  = `<b>${UF_NAMES[uf]||uf}</b> (${uf})<br>R$ ${val.toFixed(2)} bi`;
+}
+function hideTip(){ document.getElementById('mapTip').style.display='none'; }
+
+// ═══════════════════════════════════════════════
+// RENDER ABAS
+// ═══════════════════════════════════════════════
+async function render() {
+  const panels = document.getElementById('panels');
+  document.getElementById('stRight').textContent = `${ANOS[iStart]}–${ANOS[iEnd]}`;
+
+  if (abaAtual === 'geral')       await renderGeral(panels);
+  else if (abaAtual === 'fontes') await renderFontes(panels);
+  else if (abaAtual === 'bancos') await renderBancos(panels);
+  else if (abaAtual === 'modalidade') await renderModalidade(panels);
+  else if (abaAtual === 'produtos')   await renderProdutos(panels);
+  else if (abaAtual === 'abc')        await renderABC(panels);
+  else if (abaAtual === 'mapa')       await renderMapa(panels);
+  else if (abaAtual === 'porte')      await renderPorte(panels);
+  else if (abaAtual === 'genero')     await renderGenero(panels);
+  else if (abaAtual === 'concentracao') await renderConcentracao(panels);
+}
+
+// ── GERAL ──
+async function renderGeral(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Evolução total · Custeio + Investimento + Comercialização','R$ bi acumulado','') +
+    makePanel(2,'Composição por região · '+ANOS[iStart]+'–'+ANOS[iEnd],'R$ bi','') +
+    makePanel(3,'Modalidade ao longo do tempo','R$ bi','') +
+    makePanel(4,'Fontes de recursos · total acumulado','R$ bi','');
+
+  const fr = DB.fonte_recursos; if (!fr) return;
+  const ru = DB.regiao_uf;
+  const anos = anosAtivos();
+
+  // 1 - Custeio + Invest + Comerc empilhado por fonte
+  const rows1 = (fr.serie_anual||[]).filter(r=>anos.includes(String(r.AnoEmissao))&&fonteAtivas.has(r.grupoFonte));
+  const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+  barStacked('c1', anos, fAtivas.map(({k,c})=>({
+    label:k,
+    data: anos.map(a=>rows1.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)),
+    backgroundColor:c, borderWidth:0, borderRadius:1,
+  })));
+
+  // 2 - Por região
+  if (ru?.serie_regiao_ano) {
+    const regs=['CENTRO-OESTE','SUL','SUDESTE','NORDESTE','NORTE'];
+    const rcs=['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050'];
+    const rows2 = ru.serie_regiao_ano.filter(r=>anos.includes(String(r.AnoEmissao)));
+    barStacked('c2', anos, regs.map((rg,i)=>({
+      label:rg,
+      data:anos.map(a=>rows2.filter(r=>String(r.AnoEmissao)===a&&r.nomeRegiao===rg).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)),
+      backgroundColor:rcs[i], borderWidth:0,
+    })));
+  }
+
+  // 3 - Modalidade
+  const custeio  = DB.custeio_regiao?.serie_anual  || [];
+  const invest   = DB.invest_regiao?.serie_anual    || [];
+  const comerc   = DB.comercializacao?.serie_anual  || [];
+  lineMulti('c3', anos, [
+    {label:'Custeio',        data:anos.map(a=>custeio.filter(r=>String(r.AnoEmissao)===a).reduce((s,r)=>s+(r.VlCusteio||0),0)),  borderColor:'#c8e63c',backgroundColor:'#c8e63c22',borderWidth:2,pointRadius:2,fill:true,tension:.3},
+    {label:'Investimento',   data:anos.map(a=>invest.filter(r=>String(r.AnoEmissao)===a).reduce((s,r)=>s+(r.VlInvest||0),0)),    borderColor:'#4db8a0',backgroundColor:'#4db8a022',borderWidth:2,pointRadius:2,fill:true,tension:.3},
+    {label:'Comercialização',data:anos.map(a=>comerc.filter(r=>String(r.AnoEmissao)===a).reduce((s,r)=>s+(r.VlComerc||0),0)),   borderColor:'#8866cc',backgroundColor:'#8866cc22',borderWidth:2,pointRadius:2,fill:true,tension:.3},
+  ]);
+
+  // 4 - Fontes donut
+  const fonteVols = fAtivas.map(({k})=>
+    rows1.filter(r=>r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0));
+  donut('c4', fAtivas.map(f=>f.k), fonteVols, fAtivas.map(f=>f.c));
+}
+
+// ── FONTES ──
+async function renderFontes(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Série mensal por fonte','R$ bi custeio+invest','') +
+    makePanel(2,'Composição anual','R$ bi empilhado','') +
+    makePanel(3,'LCA Livre vs demais fontes','R$ bi','') +
+    makePanel(4,'Share das fontes no período','%','');
+
+  const fr = DB.fonte_recursos; if (!fr) return;
+  const fi = DB.fonte_if;
+  const anos = anosAtivos();
+  const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+
+  // 1 - Série mensal (agrega meses em anos para simplicidade com filtro de período)
+  const rows1 = (fr.serie_anual||[]).filter(r=>anos.includes(String(r.AnoEmissao))&&fonteAtivas.has(r.grupoFonte));
+  barStacked('c1', anos, fAtivas.map(({k,c})=>({
+    label:k,
+    data:anos.map(a=>rows1.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)),
+    backgroundColor:c, borderWidth:0,
+  })));
+
+  // 2 - Atividade × fonte
+  if (fr.atividade) {
+    const ativs = ['Agrícola','Pecuária'];
+    const rA = fr.atividade.filter(r=>anos.includes(String(r.AnoEmissao)));
+    barStacked('c2', anos, ativs.map((at,i)=>({
+      label:at,
+      data:anos.map(a=>rA.filter(r=>String(r.AnoEmissao)===a&&r.nomeAtiv===at).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      backgroundColor:i===0?'#c8e63c':'#e8a020', borderWidth:0,
+    })));
+  }
+
+  // 3 - LCA vs resto linha
+  const rowsLCA = (fi?.serie_anual||fr.serie_anual||[]).filter(r=>anos.includes(String(r.AnoEmissao)));
+  lineMulti('c3', anos, [
+    {label:'LCA Livre', data:anos.map(a=>rowsLCA.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='LCA Livre').reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)), borderColor:'#c8e63c',backgroundColor:'#c8e63c15',borderWidth:2.5,pointRadius:2,fill:true,tension:.3},
+    {label:'Poupança Rural', data:anos.map(a=>rowsLCA.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='Poupança Rural').reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)), borderColor:'#8866cc',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[4,3]},
+    {label:'BNDES/FAT', data:anos.map(a=>rowsLCA.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='BNDES/FAT').reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)), borderColor:'#4db8a0',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[4,3]},
+    {label:'Obrigatórios', data:anos.map(a=>rowsLCA.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='Obrigatórios').reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)), borderColor:'#e05050',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[2,3]},
+  ]);
+
+  // 4 - Share % cada fonte
+  const totPeriodo = fAtivas.map(({k})=>rows1.filter(r=>r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0));
+  donut('c4', fAtivas.map(f=>f.k), totPeriodo, fAtivas.map(f=>f.c));
+}
+
+// ── BANCOS ──
+async function renderBancos(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Evolução LCA share por banco · top 8','% do total do banco','') +
+    makeTablePanel('tRanking','Ranking bancos · volume total','R$ bi','') +
+    makePanel(3,'Volume por banco e fonte · '+ANOS[iEnd],'R$ bi','') +
+    makePanel(4,'LCA share × banco · '+ANOS[iEnd],'%','');
+
+  const fi = DB.fonte_if; if (!fi) return;
+  const anos = anosAtivos();
+
+  // Ranking bancos
+  const rb = fi.ranking_bancos || [];
+  const top10 = rb.slice(0,10);
+  tabelaRanking('tRanking', top10.map(r=>({...r,_val:r.total})), [
+    {label:'Banco', key:'banco'},
+    {label:'Volume bi', key:'total', num:true, bar:true, dec:1, color:'var(--acc)'},
+  ], top10[0]?.total||1);
+
+  // 1 - LCA share linha por banco top 6
+  const share = fi.lca_share_banco || [];
+  const topBancos = rb.slice(0,6).map(r=>r.banco);
+  const cores = ['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050','#5090e0'];
+  lineMulti('c1', anos, topBancos.map((b,i)=>({
+    label: b.replace(/BCO /g,'').replace(/S\.A\./g,'').trim().slice(0,20),
+    data: anos.map(a=>{
+      const r = share.find(s=>s.banco===b&&String(s.ano)===a);
+      return r ? r.share : null;
+    }),
+    borderColor:cores[i], backgroundColor:'transparent',
+    borderWidth:1.8, pointRadius:2, fill:false, tension:.3,
+    spanGaps:true,
+  })));
+
+  // 3 - Volume por banco e fonte (último ano)
+  const lastAno = ANOS[iEnd];
+  const bfa = fi.banco_fonte_ano || [];
+  const rowsY = bfa.filter(r=>String(r.AnoEmissao)===lastAno);
+  const top8 = rb.slice(0,8).map(r=>r.banco);
+  const fSel = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k)).slice(0,5);
+  barStacked('c3', top8.map(b=>b.replace(/BCO /g,'').replace(/S\.A\./g,'').trim().slice(0,18)), fSel.map(({k,c})=>({
+    label:k,
+    data:top8.map(b=>rowsY.filter(r=>r.nomeIF===b&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0)+(r.VlComercializacao||0),0)),
+    backgroundColor:c, borderWidth:0,
+  })));
+
+  // 4 - LCA share barras horizontais
+  const shareY = top8.map(b=>{const r=share.find(s=>s.banco===b&&String(s.ano)===lastAno);return r?r.share:0;});
+  barH('c4', top8.map(b=>b.replace(/BCO /g,'').replace(/S\.A\./g,'').trim().slice(0,20)), shareY,
+    shareY.map(v=>v>30?'#c8e63c':v>15?'#e8a020':'#4db8a0'));
+}
+
+// ── MODALIDADE ──
+async function renderModalidade(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Investimento por fonte','R$ bi','') +
+    makePanel(2,'Custeio por fonte','R$ bi','') +
+    makePanel(3,'Comercialização por fonte','R$ bi','') +
+    makePanel(4,'Custeio vs Investimento × LCA','comparativo','');
+
+  const ir = DB.invest_regiao;
+  const cr = DB.custeio_regiao;
+  const co = DB.comercializacao;
+  const anos = anosAtivos();
+  const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+
+  if (ir?.serie_anual) barStacked('c1',anos,fAtivas.map(({k,c})=>({
+    label:k,data:anos.map(a=>ir.serie_anual.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlInvest||0),0)),
+    backgroundColor:c,borderWidth:0,
+  })));
+  if (cr?.serie_anual) barStacked('c2',anos,fAtivas.map(({k,c})=>({
+    label:k,data:anos.map(a=>cr.serie_anual.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0),0)),
+    backgroundColor:c,borderWidth:0,
+  })));
+  if (co?.serie_anual) barStacked('c3',anos,fAtivas.map(({k,c})=>({
+    label:k,data:anos.map(a=>co.serie_anual.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlComerc||0),0)),
+    backgroundColor:c,borderWidth:0,
+  })));
+
+  // 4 - LCA no custeio vs investimento
+  lineMulti('c4', anos, [
+    {label:'LCA em Investimento',
+     data:anos.map(a=>ir?.serie_anual?.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='LCA Livre').reduce((s,r)=>s+(r.VlInvest||0),0)||0),
+     borderColor:'#c8e63c',backgroundColor:'#c8e63c15',borderWidth:2,pointRadius:2,fill:true,tension:.3},
+    {label:'LCA em Custeio',
+     data:anos.map(a=>cr?.serie_anual?.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte==='LCA Livre').reduce((s,r)=>s+(r.VlCusteio||0),0)||0),
+     borderColor:'#e8a020',backgroundColor:'#e8a02015',borderWidth:2,pointRadius:2,fill:true,tension:.3},
+  ]);
+}
+
+// ── PRODUTOS ──
+async function renderProdutos(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makeTablePanel('tProdInvest','Top produtos · Investimento','R$ bi','') +
+    makeTablePanel('tProdCusteio','Top produtos · Custeio','R$ bi','') +
+    makePanel(5,'Top 10 produtos por investimento · '+ANOS[iEnd],'R$ bi','') +
+    makePanel(6,'Top 10 produtos por custeio · '+ANOS[iEnd],'R$ bi','');
+
+  const ir = DB.invest_regiao;
+  const cr = DB.custeio_regiao;
+
+  function buildProdTable(containerId, topProds, campo) {
+    const agg = {};
+    for (const r of (topProds||[])) {
+      const p = r.nomeProduto||'';
+      agg[p] = (agg[p]||0) + (r[campo]||0);
+    }
+    const sorted = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,30);
+    const mx = sorted[0]?.[1]||1;
+    tabelaRanking(containerId, sorted.map(([p,v])=>({nome:p,val:v,_val:v})), [
+      {label:'Produto', key:'nome'},
+      {label:'R$ bi', key:'val', num:true, bar:true, dec:2, color:'var(--acc)'},
+    ], mx);
+  }
+
+  buildProdTable('tProdInvest',  ir?.top_produtos, 'VlInvest');
+  buildProdTable('tProdCusteio', cr?.top_produtos, 'VlCusteio');
+
+  // Charts top 10
+  function topChart(id, topProds, campo, cor) {
+    const agg = {};
+    for (const r of (topProds||[])) { const p=r.nomeProduto||''; agg[p]=(agg[p]||0)+(r[campo]||0); }
+    const top10 = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    barH(id, top10.map(([p])=>p.replace(/"/g,'').slice(0,25)), top10.map(([,v])=>v),
+         top10.map((_,i)=>['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050','#5090e0','#d060a0','#60d0a0','#c88040','#707070'][i]));
+  }
+  topChart('c5', ir?.top_produtos, 'VlInvest',  '#c8e63c');
+  topChart('c6', cr?.top_produtos, 'VlCusteio', '#4db8a0');
+}
+
+// ── ABC+ ──
+async function renderABC(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'ABC+/RENOVAGRO · Volume por programa ao longo do tempo','R$ bi','') +
+    makeTablePanel('tABC','Ranking subprogramas · volume histórico','R$ bi','') +
+    makePanel(3,'ABC+ por fonte de recursos','R$ bi','') +
+    makePanel(4,'ABC+ por UF · '+ANOS[iEnd],'R$ bi','');
+
+  const ps  = DB.prog_subprograma;
+  const psu = DB.prog_sub_uf;
+  const anos = anosAtivos();
+
+  // 1 - Evolução programas
+  if (ps?.serie_prog_ano) {
+    const progs = [...new Set(ps.serie_prog_ano.map(r=>r.nomePrograma))].filter(Boolean).slice(0,8);
+    const cores = ['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050','#5090e0','#d060a0','#60d0a0'];
+    lineMulti('c1', anos, progs.map((p,i)=>({
+      label: p.slice(0,25),
+      data: anos.map(a=>ps.serie_prog_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomePrograma===p).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      borderColor:cores[i],backgroundColor:'transparent',borderWidth:1.8,pointRadius:2,fill:false,tension:.3,
+    })));
+  }
+
+  // Tabela ranking subprogramas
+  if (ps?.ranking_sub) {
+    const mx = ps.ranking_sub[0]?.total||1;
+    tabelaRanking('tABC', ps.ranking_sub.slice(0,30).map(r=>({...r,_val:r.total})), [
+      {label:'Subprograma', key:'sub'},
+      {label:'R$ bi', key:'total', num:true, bar:true, dec:2, color:'#c8e63c'},
+    ], mx);
+  }
+
+  // 3 - ABC por fonte
+  if (ps?.serie_sub_ano) {
+    const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+    barStacked('c3', anos, fAtivas.map(({k,c})=>({
+      label:k,
+      data:anos.map(a=>ps.serie_sub_ano.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      backgroundColor:c,borderWidth:0,
+    })));
+  }
+
+  // 4 - ABC por UF no último ano
+  if (psu?.abc_uf_ano) {
+    const lastAno = ANOS[iEnd];
+    const ufAgg = {};
+    for (const r of psu.abc_uf_ano.filter(r=>String(r.AnoEmissao)===lastAno)) {
+      const uf = r.nomeUF||r.cdEstado||'';
+      ufAgg[uf] = (ufAgg[uf]||0) + (r.VlCusteio||0) + (r.VlInvestimento||0);
+    }
+    const sorted = Object.entries(ufAgg).sort((a,b)=>b[1]-a[1]).slice(0,15);
+    barH('c4', sorted.map(([u])=>u), sorted.map(([,v])=>v),
+         sorted.map((_,i)=>i===0?'#c8e63c':i<3?'#4db8a0':'#2d7a4a'));
+  }
+}
+
+// ── MAPA ──
+async function renderMapa(panels) {
+  panels.style.cssText = 'grid-template-columns:1.3fr 1fr;grid-template-rows:1fr';
+  panels.innerHTML = `
+    <div class="panel">
+      <div class="ph"><span class="ph-title">Crédito rural por UF · ${ANOS[iStart]}–${ANOS[iEnd]}</span><span class="ph-tag">R$ bi total · hover para detalhes</span></div>
+      <div style="flex:1;padding:8px" id="mapContainer"></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-title">Ranking UFs · período</span><span class="ph-tag">R$ bi</span></div>
+      <div class="tbl-wrap" id="tUF"></div>
+    </div>`;
+
+  const ru = DB.regiao_uf; if (!ru) return;
+  const anos = anosAtivos();
+  const rows = (ru.serie_uf_ano||[]).filter(r=>anos.includes(String(r.AnoEmissao)));
+
+  const ufTot = {};
+  for (const r of rows) {
+    const uf = r.nomeUF||r.cdEstado||'';
+    if (!uf) continue;
+    ufTot[uf] = (ufTot[uf]||0) + (r.VlCusteio||0) + (r.VlInvestimento||0) + (r.VlComercializacao||0);
+  }
+
+  renderMap('mapContainer', ufTot);
+
+  const sorted = Object.entries(ufTot).sort((a,b)=>b[1]-a[1]);
+  const mx = sorted[0]?.[1]||1;
+  tabelaRanking('tUF', sorted.map(([uf,v])=>({uf,val:v,_val:v})), [
+    {label:'UF', key:'uf'},
+    {label:'R$ bi', key:'val', num:true, bar:true, dec:1, color:'#c8e63c'},
+  ], mx);
+}
+
+// ── PORTE ──
+async function renderPorte(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Segmento × fonte ao longo do tempo','R$ bi','') +
+    makePanel(2,'LCA share por segmento','%','') +
+    makePanel(3,'Segmento por região','R$ bi','') +
+    makePanel(4,'Evolução por segmento','R$ bi','');
+
+  const si = DB.segmento_if; if (!si) return;
+  const su = DB.seg_if_uf;
+  const anos = anosAtivos();
+  const segs = ['PRONAF','PRONAMP','Outras PF','PJ','Agroindústria'];
+  const segC = ['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050'];
+
+  // 1 - Segmento × fonte
+  const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+  if (si.seg_fonte_ano) barStacked('c1', anos, fAtivas.map(({k,c})=>({
+    label:k,
+    data:anos.map(a=>si.seg_fonte_ano.filter(r=>String(r.AnoEmissao)===a&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+    backgroundColor:c, borderWidth:0,
+  })));
+
+  // 2 - LCA share por segmento linha
+  if (si.lca_share_seg) lineMulti('c2', anos, segs.map((sg,i)=>({
+    label:sg,
+    data:anos.map(a=>{const r=si.lca_share_seg.find(s=>s.seg===sg&&String(s.ano)===a);return r?r.share:null;}),
+    borderColor:segC[i],backgroundColor:'transparent',borderWidth:2,pointRadius:2,fill:false,tension:.3,spanGaps:true,
+  })));
+
+  // 3 - Segmento por região
+  if (su?.seg_reg_ano) {
+    const regs=['CENTRO-OESTE','SUL','SUDESTE','NORDESTE','NORTE'];
+    const rcs=['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050'];
+    barStacked('c3', anos, regs.map((rg,i)=>({
+      label:rg,
+      data:anos.map(a=>su.seg_reg_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomeRegiao===rg).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      backgroundColor:rcs[i], borderWidth:0,
+    })));
+  }
+
+  // 4 - Evolução por segmento
+  if (si.serie_seg_ano) lineMulti('c4', anos, segs.map((sg,i)=>({
+    label:sg,
+    data:anos.map(a=>si.serie_seg_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomeSeg===sg).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+    borderColor:segC[i],backgroundColor:segC[i]+'15',borderWidth:2,pointRadius:2,fill:true,tension:.3,
+  })));
+}
+
+// ── GÊNERO ──
+async function renderGenero(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Evolução por gênero','R$ bi','') +
+    makePanel(2,'Gênero × fonte ao longo do tempo','R$ bi','') +
+    makePanel(3,'Participação feminina por UF · '+ANOS[iEnd],'%','') +
+    makePanel(4,'Gênero × fonte · composição','R$ bi','');
+
+  const ge = DB.genero; if (!ge) return;
+  const anos = anosAtivos();
+  const genC = {'Masculino':'#4db8a0','Feminino':'#e8a020','Não informado':'#5a5248'};
+
+  // 1 - Evolução linha
+  if (ge.serie_genero_ano) {
+    const gens = ['Masculino','Feminino','Não informado'];
+    lineMulti('c1', anos, gens.map(g=>({
+      label:g,
+      data:anos.map(a=>ge.serie_genero_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomeGenero===g).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      borderColor:genC[g],backgroundColor:genC[g]+'15',borderWidth:2,pointRadius:2,fill:g==='Feminino',tension:.3,
+    })));
+  }
+
+  // 2 - Gênero × fonte barras
+  const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+  if (ge.serie_genero_ano) barStacked('c2', anos, fAtivas.map(({k,c})=>({
+    label:k,
+    data:anos.map(a=>{
+      const fem = ge.serie_genero_ano.filter(r=>String(r.AnoEmissao)===a&&r.nomeGenero==='Feminino'&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0);
+      return fem;
+    }),
+    backgroundColor:c,borderWidth:0,
+  })));
+
+  // 3 - Participação fem por UF
+  if (ge.serie_genero_uf_ano) {
+    const lastAno = ANOS[iEnd];
+    const ufData = {};
+    for (const r of ge.serie_genero_uf_ano.filter(r=>String(r.AnoEmissao)===lastAno)) {
+      const uf = r.nomeUF||'';
+      if (!ufData[uf]) ufData[uf] = {fem:0,tot:0};
+      const v = (r.VlCusteio||0)+(r.VlInvestimento||0);
+      ufData[uf].tot += v;
+      if (r.nomeGenero==='Feminino') ufData[uf].fem += v;
+    }
+    const sorted = Object.entries(ufData).map(([uf,v])=>([uf,v.tot>0?v.fem/v.tot*100:0])).sort((a,b)=>b[1]-a[1]).slice(0,20);
+    barH('c3', sorted.map(([u])=>u), sorted.map(([,v])=>v),
+         sorted.map(([,v])=>v>30?'#e8a020':v>20?'#4db8a0':'#2d7a4a'));
+  }
+
+  // 4 - Donut gênero no período
+  if (ge.serie_genero_ano) {
+    const gens = ['Masculino','Feminino','Não informado'];
+    const tots = gens.map(g=>ge.serie_genero_ano.filter(r=>anos.includes(String(r.AnoEmissao))&&r.nomeGenero===g).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0));
+    donut('c4', gens, tots, gens.map(g=>genC[g]));
+  }
+}
+
+// ── CONCENTRAÇÃO ──
+async function renderConcentracao(panels) {
+  panels.style.cssText = 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr';
+  panels.innerHTML =
+    makePanel(1,'Distribuição por faixa de valor · evolução','R$ bi','') +
+    makePanel(2,'Valor médio por contrato','R$ mil','') +
+    makePanel(3,'Faixa × fonte · '+ANOS[iEnd],'R$ bi','') +
+    makeTablePanel('tMun','Top 30 municípios · volume','R$ bi','');
+
+  const fv = DB.faixa_valores;
+  const fu = DB.faixa_uf;
+  const mu = DB.municipios;
+  const anos = anosAtivos();
+
+  // 1 - Faixa × ano
+  if (fv?.faixa_ano) {
+    const faixas = [...new Set(fv.faixa_ano.map(r=>r.faixa))].filter(Boolean);
+    const cores = ['#c8e63c','#4db8a0','#8866cc','#e8a020','#e05050','#5090e0','#d060a0','#60d0a0','#c88040','#707070','#404040','#202020','#101010'];
+    barStacked('c1', anos, faixas.slice(0,12).map((f,i)=>({
+      label:f.slice(0,20),
+      data:anos.map(a=>fv.faixa_ano.filter(r=>String(r.AnoEmissao)===a&&r.faixa===f).reduce((s,r)=>s+(parseFloat(r.Valor)||0)/1e9,0)),
+      backgroundColor:cores[i]||'#404040',borderWidth:0,
+    })));
+  }
+
+  // 2 - Valor médio
+  if (fv?.valor_medio) lineMulti('c2', anos, [{
+    label:'Valor médio (R$ mil)',
+    data:anos.map(a=>{
+      const rs = fv.valor_medio.filter(r=>String(r.ano)===a);
+      const tot = rs.reduce((s,r)=>s+(r.valor_bi||0),0);
+      const qtd = rs.reduce((s,r)=>s+(r.qtd||0),0);
+      return qtd>0?tot*1e9/qtd/1e3:null;
+    }),
+    borderColor:'#c8e63c',backgroundColor:'#c8e63c15',borderWidth:2.5,pointRadius:3,fill:true,tension:.3,spanGaps:true,
+  }]);
+
+  // 3 - Faixa × fonte no último ano
+  if (fu?.faixa_fonte_ano) {
+    const lastAno = ANOS[iEnd];
+    const faixas = [...new Set(fu.faixa_fonte_ano.map(r=>r.faixa))].filter(Boolean).slice(0,8);
+    const fAtivas = FONTES_CONFIG.filter(f=>fonteAtivas.has(f.k));
+    barStacked('c3', faixas.map(f=>f.slice(0,18)), fAtivas.map(({k,c})=>({
+      label:k,
+      data:faixas.map(f=>fu.faixa_fonte_ano.filter(r=>String(r.AnoEmissao)===lastAno&&r.faixa===f&&r.grupoFonte===k).reduce((s,r)=>s+(r.VlCusteio||0)+(r.VlInvestimento||0),0)),
+      backgroundColor:c,borderWidth:0,
+    })));
+  }
+
+  // Tabela municípios
+  if (mu?.top_municipios) {
+    const mx = mu.top_municipios[0]?.total||1;
+    tabelaRanking('tMun', mu.top_municipios.slice(0,30).map(r=>({...r,_val:r.total})), [
+      {label:'Município', key:'municipio'},
+      {label:'UF', key:'uf'},
+      {label:'R$ bi', key:'total', num:true, bar:true, dec:2, color:'#c8e63c'},
+    ], mx);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  initNav();
+  initSliders();
+  await loadAll();
+  updateSidebar();
+  render();
+  document.getElementById('stLeft').textContent = 'BCB · SICOR · MDCR v2 · ODbL';
+}
+
+init();
+</script>
+</body>
+</html>

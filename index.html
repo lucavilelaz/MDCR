@@ -262,7 +262,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:10
   <!-- MAIN -->
   <main class="main" id="main">
     <div class="panels" id="panels" style="grid-template-columns:1fr;grid-template-rows:1fr">
-      <div class="panel"><div class="spinner"><div class="spin"></div>Carregando dados…</div></div>
+      <div class="panel"><div class="spinner"><div class="spin"></div>Iniciando Observatório…</div></div>
     </div>
     <div class="statusbar">
       <span id="stLeft">BCB · SICOR · MDCR v2</span>
@@ -331,18 +331,36 @@ async function loadJSON(nome) {
 }
 
 async function loadAll() {
-  const nomes = ['fonte_recursos','fonte_if','invest_regiao','custeio_regiao',
-                 'comercializacao','prog_subprograma','prog_sub_uf','genero',
-                 'segmento_if','tipo_pessoa','seg_if_uf','faixa_valores',
-                 'faixa_uf','regiao_uf','municipios','invest_municipio','custeio_municipio',
-                 'mapa_estados','mapa_brasil','mapa_municipios'];
+  // Arquivos essenciais — carregados primeiro, em sequência
+  const essenciais = ['fonte_recursos','fonte_if','invest_regiao','custeio_regiao',
+                      'comercializacao','prog_subprograma','prog_sub_uf','genero',
+                      'segmento_if','tipo_pessoa','seg_if_uf','faixa_valores',
+                      'faixa_uf','regiao_uf','municipios'];
+  // Arquivos do mapa — opcionais, não travam o carregamento
+  const opcionais  = ['invest_municipio','custeio_municipio',
+                      'mapa_estados','mapa_brasil','mapa_municipios'];
+
   let ok = 0;
-  for (const n of nomes) {
+  const total = essenciais.length + opcionais.length;
+
+  // Carrega essenciais em sequência (garante que painel funciona)
+  for (const n of essenciais) {
     await loadJSON(n);
     ok++;
-    document.getElementById('statusLabel').textContent = `${ok}/${nomes.length} arquivos`;
+    document.getElementById('statusLabel').textContent = `${ok}/${total} arquivos`;
   }
+
+  // Marca como pronto — painel já pode ser usado
   document.getElementById('statusLabel').textContent = 'Pronto';
+
+  // Carrega opcionais em background, sem bloquear
+  for (const n of opcionais) {
+    loadJSON(n).then(() => {
+      ok++;
+      const lbl = document.getElementById('statusLabel');
+      if (lbl) lbl.textContent = ok < total ? `+${n}` : 'Pronto';
+    }).catch(() => {});
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1015,44 +1033,6 @@ const MAPA_DIM = {
   shareLCA: {label:'LCA Share (%)',        fmt: v => v.toFixed(1)+'%'},
 };
 
-const UF_PATHS = {
-  AC:"M135,255 L155,255 L165,268 L155,278 L140,278 L130,268Z",
-  AM:"M155,180 L215,170 L245,185 L260,210 L250,240 L215,255 L185,255 L165,268 L155,255 L145,235 L145,210Z",
-  RR:"M195,130 L235,125 L245,155 L235,175 L215,170 L200,160Z",
-  PA:"M260,170 L310,165 L330,180 L340,205 L325,225 L300,235 L270,240 L250,240 L260,210 L245,185Z",
-  AP:"M310,145 L335,145 L340,165 L320,168 L310,165Z",
-  TO:"M330,220 L355,215 L365,235 L360,260 L345,270 L325,265 L315,248 L320,230Z",
-  MA:"M340,190 L375,185 L385,205 L375,220 L355,215 L340,205Z",
-  PI:"M375,195 L400,192 L410,210 L400,225 L385,225 L375,220Z",
-  CE:"M400,185 L425,182 L435,198 L425,210 L410,210 L400,192Z",
-  RN:"M425,182 L448,183 L450,196 L435,198Z",
-  PB:"M415,198 L448,196 L447,207 L432,210 L415,207Z",
-  PE:"M398,208 L447,207 L447,220 L420,222 L398,218Z",
-  AL:"M435,218 L450,218 L452,228 L437,230Z",
-  SE:"M420,226 L437,224 L440,234 L425,236Z",
-  BA:"M360,225 L410,222 L440,238 L445,268 L430,295 L405,308 L378,305 L358,290 L345,268 L348,248Z",
-  MG:"M340,295 L378,303 L410,310 L420,335 L408,358 L388,368 L358,368 L335,355 L320,335 L325,310Z",
-  ES:"M410,318 L432,315 L438,338 L425,352 L410,355 L405,338Z",
-  RJ:"M388,368 L415,358 L428,372 L418,385 L395,382 L383,373Z",
-  SP:"M295,340 L335,335 L360,358 L360,380 L338,392 L308,390 L285,375 L280,355Z",
-  PR:"M265,358 L300,352 L335,365 L338,388 L315,400 L282,400 L258,385 L258,368Z",
-  SC:"M255,390 L285,390 L310,400 L308,415 L285,420 L258,415 L250,402Z",
-  RS:"M248,415 L285,415 L312,418 L315,445 L300,462 L270,465 L248,450 L238,430Z",
-  MS:"M255,325 L295,318 L322,330 L325,360 L305,368 L275,365 L250,350 L248,335Z",
-  MT:"M218,255 L270,248 L300,265 L305,300 L290,315 L255,322 L220,312 L208,288Z",
-  GO:"M300,280 L335,272 L355,290 L352,318 L330,330 L305,325 L288,310 L292,292Z",
-  DF:"M332,300 L342,300 L342,310 L332,310Z",
-  RO:"M200,258 L235,252 L250,268 L245,290 L225,298 L200,290 L190,275Z",
-};
-
-const UF_NAMES = {
-  AC:"Acre",AM:"Amazonas",RR:"Roraima",PA:"Pará",AP:"Amapá",TO:"Tocantins",
-  MA:"Maranhão",PI:"Piauí",CE:"Ceará",RN:"Rio Grande do Norte",PB:"Paraíba",
-  PE:"Pernambuco",AL:"Alagoas",SE:"Sergipe",BA:"Bahia",MG:"Minas Gerais",
-  ES:"Espírito Santo",RJ:"Rio de Janeiro",SP:"São Paulo",PR:"Paraná",
-  SC:"Santa Catarina",RS:"Rio Grande do Sul",MS:"Mato Grosso do Sul",
-  MT:"Mato Grosso",GO:"Goiás",DF:"Distrito Federal",RO:"Rondônia",
-};
 
 function mapaColor(val, mn, mx) {
   if (mx <= mn) return '#1a2a1a';
